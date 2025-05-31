@@ -7,5 +7,9 @@ namespace DUANTOTNGHIEP.DTOS
         [Required]
         [StringLength(100)]
         public string FoodTypeName { get; set; }
+
+        [Required]
+        [StringLength(255)]
+        public string Description { get; set; }
     }
 }

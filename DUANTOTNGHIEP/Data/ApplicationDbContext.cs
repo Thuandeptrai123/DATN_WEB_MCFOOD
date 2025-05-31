@@ -1,0 +1,49 @@
+﻿using DUANTOTNGHIEP.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace DUANTOTNGHIEP.Data
+{
+    public class ApplicationDbContext : DbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+        {
+        }
+
+        public DbSet<FoodType> FoodTypes { get; set; }
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            // Cấu hình ApplicationRole
+            builder.Entity<FoodType>(entity =>
+            {
+                // Cấu hình khóa chính
+                entity.HasKey(r => r.FoodTypeId);
+
+                // Cấu hình thuộc tính riêng của FoodType
+                entity.Property(r => r.FoodTypeId).IsRequired();
+                entity.Property(r => r.FoodTypeName)
+                      .IsRequired()
+                      .HasMaxLength(255);
+
+                entity.Property(r => r.Description)
+                      .HasMaxLength(255);
+
+                // Cấu hình các thuộc tính kế thừa từ BaseModel
+                entity.Property(r => r.CreatedBy)
+                      .IsRequired()
+                      .HasMaxLength(255);
+
+                entity.Property(r => r.UpdatedBy)
+                      .HasMaxLength(255);
+
+                entity.Property(r => r.CreatedDate)
+                      .IsRequired();
+
+                entity.Property(r => r.UpdatedDate)
+                      .IsRequired();
+            });
+        }
+    }
+}
