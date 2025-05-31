@@ -5,6 +5,8 @@
         public Guid FoodTypeId { get; set; }
         public string FoodTypeName { get; set; }
 
+        public string Description { get; set; }
+
         public DateTime CreatedDate { get; set; }
         public string CreatedBy { get; set; }
         public DateTime UpdatedDate { get; set; }
