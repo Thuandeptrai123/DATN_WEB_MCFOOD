@@ -5,7 +5,7 @@
 namespace DUANTOTNGHIEP.Migrations
 {
     /// <inheritdoc />
-    public partial class User : Migration
+    public partial class ASM2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

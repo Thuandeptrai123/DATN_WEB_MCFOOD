@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DUANTOTNGHIEP.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250612181126_newUser")]
-    partial class newUser
+    [Migration("20250612183754_ASM1")]
+    partial class ASM1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
