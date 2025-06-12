@@ -1,5 +1,4 @@
-
-using DUANTOTNGHIEP.Data;
+﻿using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +11,7 @@ namespace DUANTOTNGHIEP
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
+            
             // Add services to the container.
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -33,7 +32,8 @@ namespace DUANTOTNGHIEP
              .AddDefaultTokenProviders();
 
 
-            builder.Services.AddAuthentication(opts => {
+            builder.Services.AddAuthentication(opts =>
+            {
                 opts.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 opts.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 opts.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -78,7 +78,6 @@ namespace DUANTOTNGHIEP
 
 
             var app = builder.Build();
-
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -94,6 +93,24 @@ namespace DUANTOTNGHIEP
             app.MapControllers();
 
             app.Run();
+        }
+        // ✅ Tạo Role mặc định trong Scope hợp lệ
+        private static async Task CreateRolesAsync(IServiceProvider serviceProvider)
+        {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+                string[] roleNames = { "ADMIN", "STAFF", "Customer" };
+
+                foreach (var roleName in roleNames)
+                {
+                    if (!await roleManager.RoleExistsAsync(roleName))
+                    {
+                        await roleManager.CreateAsync(new IdentityRole(roleName));
+                    }
+                }
+            }
         }
     }
 }
