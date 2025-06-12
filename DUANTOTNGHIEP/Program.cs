@@ -1,5 +1,6 @@
 
 using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,12 @@ namespace DUANTOTNGHIEP
             //  .AddDefaultTokenProviders();
             //// Add services to the container.
             ////builder.Services.AddScoped<IOrderService, OrderService>();
-
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+            })
+             .AddEntityFrameworkStores<ApplicationDbContext>()
+             .AddDefaultTokenProviders();
 
 
             builder.Services.AddAuthentication(opts => {
