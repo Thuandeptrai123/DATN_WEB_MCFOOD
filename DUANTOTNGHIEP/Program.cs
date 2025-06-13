@@ -84,7 +84,7 @@ namespace DUANTOTNGHIEP
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseStaticFiles(); // Phục vụ ảnh từ wwwroot
             app.UseHttpsRedirection();
 
             app.UseAuthorization();

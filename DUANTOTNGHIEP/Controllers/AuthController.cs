@@ -47,7 +47,6 @@ namespace DUANTOTNGHIEP.Controllers
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Address = dto.Address,
-                ProfileImage = dto.ProfileImage,
                 IsEmployee = false, // Mặc định là khách hàng
                 EmailConfirmed = true // bật xác thực email hay không
             };
