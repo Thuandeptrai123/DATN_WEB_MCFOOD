@@ -2,23 +2,23 @@
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
 namespace DUANTOTNGHIEP.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class EmployeeController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager; // Thêm RoleManager
         private readonly IWebHostEnvironment _env;
 
-        public UserController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext context, IWebHostEnvironment env)
+        public EmployeeController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext context, IWebHostEnvironment env)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -27,65 +27,62 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUsers()
+        public async Task<IActionResult> GetEmployees()
         {
-            var usersInUserRole = await _userManager.GetUsersInRoleAsync("Customer");
+            var employeesInEmployeeRole = await _userManager.GetUsersInRoleAsync("STAFF");
 
-            var users = usersInUserRole.Select(user => new User_DTO
+            var employees = employeesInEmployeeRole.Select(user => new User_DTO
             {
                 Id = user.Id,
                 UserName = user.UserName,
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Address = user.Address,
-                ProfileImage = user.ProfileImage,
+                Address = user.Address
             }).ToList();
 
             return Ok(new BaseResponse<List<User_DTO>>
             {
                 ErrorCode = 200,
                 Message = "Lấy danh sách người dùng thành công!",
-                Data = users
+                Data = employees
             });
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
+            var employee = await _userManager.FindByIdAsync(id);
+            if (employee == null)
             {
                 return NotFound(new BaseResponse<string>
                 {
                     ErrorCode = 404,
-                    Message = "Người dùng không tồn tại",
+                    Message = "Nhân viên không tồn tại",
                     Data = null
                 });
             }
 
-            // Kiểm tra xem user có thuộc role "Admin" không
-            var isAdmin = await _userManager.IsInRoleAsync(user, "Customer");
-            if (!isAdmin)
+            var isSTAFF = await _userManager.IsInRoleAsync(employee, "STAFF");
+            if (!isSTAFF)
             {
-                return Forbid(); // Trả về lỗi 403 nếu user không phải admin
+                return Forbid();
             }
 
             var userResponse = new User_DTO
             {
-                Id = user.Id,
-                UserName = user.UserName,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Address = user.Address,
-                ProfileImage = user.ProfileImage,
+                Id = employee.Id,
+                UserName = employee.UserName,
+                Email = employee.Email,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                Address = employee.Address
             };
 
             return Ok(new BaseResponse<User_DTO>
             {
                 ErrorCode = 200,
-                Message = "Lấy thông tin người dùng thành công!",
+                Message = "Lấy thông tin nhân viên thành công!",
                 Data = userResponse
             });
         }
@@ -116,45 +113,23 @@ namespace DUANTOTNGHIEP.Controllers
 
             var user = new ApplicationUser
             {
-                UserName = request.Email, // Dùng email làm username
+                UserName = request.Email,
                 Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                Address = request.Address
+                Address = request.Address,
+                ProfileImage = null
             };
-
-            if (request.ProfileImage != null && request.ProfileImage.Length > 0)
-            {
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-
-                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await request.ProfileImage.CopyToAsync(stream);
-                }
-
-                // Lưu đường dẫn tương đối vào DB
-                user.ProfileImage = $"/uploads/{uniqueFileName}";
-                await _userManager.UpdateAsync(user);
-            } else {
-                user.ProfileImage = "/uploads/default-avatar.png";
-            }
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (result.Succeeded)
             {
-                if (!await _roleManager.RoleExistsAsync("Customer"))
+                if (!await _roleManager.RoleExistsAsync("STAFF"))
                 {
-                    await _roleManager.CreateAsync(new IdentityRole("Customer"));
+                    await _roleManager.CreateAsync(new IdentityRole("STAFF"));
                 }
 
-                await _userManager.AddToRoleAsync(user, "Customer");
+                await _userManager.AddToRoleAsync(user, "STAFF");
 
                 //var cart = new Cart
                 //{
@@ -168,7 +143,7 @@ namespace DUANTOTNGHIEP.Controllers
                 return Ok(new BaseResponse<string>
                 {
                     ErrorCode = 200,
-                    Message = "Đăng ký User thành công!",
+                    Message = "Đăng ký STAFF thành công!",
                     Data = user.Id
                 });
             }
@@ -210,7 +185,7 @@ namespace DUANTOTNGHIEP.Controllers
                 return NotFound(new BaseResponse<string>
                 {
                     ErrorCode = 404,
-                    Message = "Người dùng không tồn tại",
+                    Message = "Nhân viên không tồn tại",
                     Data = null
                 });
             }
@@ -219,27 +194,6 @@ namespace DUANTOTNGHIEP.Controllers
             user.FirstName = request.FirstName ?? user.FirstName;
             user.LastName = request.LastName ?? user.LastName;
             user.Address = request.Address ?? user.Address;
-
-            if (request.ProfileImage != null && request.ProfileImage.Length > 0)
-            {
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-
-                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await request.ProfileImage.CopyToAsync(stream);
-                }
-
-                // Lưu đường dẫn tương đối vào DB
-                user.ProfileImage = $"/uploads/{uniqueFileName}";
-                await _userManager.UpdateAsync(user);
-            }
 
             var result = await _userManager.UpdateAsync(user);
 
@@ -260,7 +214,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result.Errors
             });
         }
-        [Authorize(Roles = "Customer,STAFF")]
+        [Authorize(Roles = "ADMIN")]
         [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePassword_DTO request)
         {

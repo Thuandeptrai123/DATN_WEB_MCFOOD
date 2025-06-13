@@ -8,9 +8,7 @@ namespace DUANTOTNGHIEP.DTOS
         public string FirstName { get; set; }
         [Required(ErrorMessage = "Tên người dùng không được để trống.")]
         public string LastName { get; set; }
-
-        [Required(ErrorMessage = "Tên người dùng không được để trống.")]
-        public string UserName { get; set; }
+        public string? UserName { get; set; }
 
         [Required(ErrorMessage = "Email không được để trống.")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
@@ -30,6 +28,6 @@ namespace DUANTOTNGHIEP.DTOS
 
         public string ConfirmPassword { get; set; }
 
-        public string? ProfileImage { get; set; }
+        public IFormFile? ProfileImage { get; set; }
     }
 }
