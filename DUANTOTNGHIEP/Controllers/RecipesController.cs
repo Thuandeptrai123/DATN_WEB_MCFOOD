@@ -1,4 +1,5 @@
 ﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Recipe;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Http;
@@ -19,35 +20,17 @@ namespace DUANTOTNGHIEP.Controllers
             _context = context;
         }
 
-        //// GET: api/recipes/food/{foodId}
-        //[HttpGet("food/{foodId}")]
-        //public async Task<IActionResult> GetByFoodId(Guid foodId)
-        //{
-        //    var recipes = await _context.Recipes
-        //        .Include(r => r.Food)
-        //        .Include(r => r.Ingredient)
-        //        .Where(r => r.FoodId == foodId)
-        //        .Select(r => new RecipeDto
-        //        {
-        //            FoodId = r.FoodId,
-        //            FoodName = r.Food.Name,
-        //            IngredientId = r.IngredientId,
-        //            IngredientName = r.Ingredient.Name,
-        //            QuantityRequired = r.QuantityRequired,
-        //            Unit = r.Ingredient.Unit
-        //        })
-        //        .ToListAsync();
-
-        //    return Ok(recipes);
-        //}
-
-
+        // GET: api/recipes/food/{foodId}
         [HttpGet("food/{foodId}")]
         public async Task<IActionResult> GetByFoodId(Guid foodId)
         {
             var food = await _context.Foods.FirstOrDefaultAsync(f => f.Id == foodId);
             if (food == null)
-                return NotFound("Food not found");
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             var ingredients = await _context.Recipes
                 .Include(r => r.Ingredient)
@@ -68,9 +51,13 @@ namespace DUANTOTNGHIEP.Controllers
                 Ingredients = ingredients
             };
 
-            return Ok(result);
+            return Ok(new BaseResponse<FoodRecipeDto>
+            {
+                ErrorCode = 200,
+                Message = "Lấy công thức món ăn thành công!",
+                Data = result
+            });
         }
-
 
         // POST: api/recipes
         [HttpPost]
@@ -80,13 +67,21 @@ namespace DUANTOTNGHIEP.Controllers
             var ingredient = await _context.Ingredients.FindAsync(dto.IngredientId);
 
             if (food == null || ingredient == null)
-                return NotFound("Food or Ingredient not found");
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn hoặc nguyên liệu không tồn tại!"
+                });
 
             var exists = await _context.Recipes.AnyAsync(r =>
                 r.FoodId == dto.FoodId && r.IngredientId == dto.IngredientId);
 
             if (exists)
-                return BadRequest("Ingredient already added to this food");
+                return BadRequest(new BaseResponse<object>
+                {
+                    ErrorCode = 400,
+                    Message = "Nguyên liệu đã tồn tại trong công thức của món ăn này!"
+                });
 
             var recipe = new Recipe
             {
@@ -103,7 +98,11 @@ namespace DUANTOTNGHIEP.Controllers
             _context.Recipes.Add(recipe);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Recipe created" });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Tạo công thức thành công!"
+            });
         }
 
         // PUT: api/recipes/{id}
@@ -112,14 +111,22 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var recipe = await _context.Recipes.FindAsync(id);
             if (recipe == null)
-                return NotFound();
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Công thức không tồn tại!"
+                });
 
             recipe.QuantityRequired = dto.QuantityRequired;
             recipe.UpdatedDate = DateTime.UtcNow;
             recipe.UpdatedBy = "System";
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Recipe updated" });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Cập nhật công thức thành công!"
+            });
         }
 
         // DELETE: api/recipes/{id}
@@ -128,13 +135,21 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var recipe = await _context.Recipes.FindAsync(id);
             if (recipe == null)
-                return NotFound();
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Công thức không tồn tại!"
+                });
 
             _context.Recipes.Remove(recipe);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Recipe deleted" });
-        }
 
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Xóa công thức thành công!"
+            });
+        }
 
         // POST: api/recipes/bulk
         [HttpPost("bulk")]
@@ -142,7 +157,11 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var food = await _context.Foods.FindAsync(dto.FoodId);
             if (food == null)
-                return NotFound("Food not found");
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             foreach (var item in dto.Ingredients)
             {
@@ -168,7 +187,11 @@ namespace DUANTOTNGHIEP.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Recipe ingredients added successfully" });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Thêm nhiều nguyên liệu vào công thức thành công!"
+            });
         }
 
         // PUT: api/recipes/bulk
@@ -177,7 +200,11 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var food = await _context.Foods.FindAsync(dto.FoodId);
             if (food == null)
-                return NotFound("Food not found");
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             var existingRecipes = await _context.Recipes
                 .Where(r => r.FoodId == dto.FoodId)
@@ -197,9 +224,11 @@ namespace DUANTOTNGHIEP.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Updated all ingredients successfully" });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Cập nhật số lượng nguyên liệu thành công!"
+            });
         }
-
     }
-
 }

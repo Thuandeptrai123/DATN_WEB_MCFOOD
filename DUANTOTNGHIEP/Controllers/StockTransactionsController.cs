@@ -1,4 +1,5 @@
 ﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.StockTransaction;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Http;
@@ -35,9 +36,15 @@ namespace DUANTOTNGHIEP.Controllers
                     Quantity = t.Quantity,
                     Date = t.Date,
                     Note = t.Note
-                }).ToListAsync();
+                })
+                .ToListAsync();
 
-            return Ok(transactions);
+            return Ok(new BaseResponse<List<StockTransactionDto>>
+            {
+                ErrorCode = 200,
+                Message = "Lấy danh sách giao dịch kho thành công!",
+                Data = transactions
+            });
         }
 
         // POST: api/stocktransactions
@@ -46,13 +53,31 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var ingredient = await _context.Ingredients.FindAsync(dto.IngredientId);
             if (ingredient == null)
-                return NotFound("Ingredient not found");
+            {
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Nguyên liệu không tồn tại!"
+                });
+            }
 
             if (dto.Type != "Import" && dto.Type != "Export")
-                return BadRequest("Type must be 'Import' or 'Export'");
+            {
+                return BadRequest(new BaseResponse<object>
+                {
+                    ErrorCode = 400,
+                    Message = "Loại giao dịch phải là 'Import' hoặc 'Export'."
+                });
+            }
 
             if (dto.Type == "Export" && ingredient.QuantityInStock < dto.Quantity)
-                return BadRequest("Not enough stock to export");
+            {
+                return BadRequest(new BaseResponse<object>
+                {
+                    ErrorCode = 400,
+                    Message = "Không đủ nguyên liệu trong kho để xuất!"
+                });
+            }
 
             var transaction = new StockTransaction
             {
@@ -77,8 +102,12 @@ namespace DUANTOTNGHIEP.Controllers
             _context.StockTransactions.Add(transaction);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Transaction created", transaction.Id });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Tạo giao dịch thành công!",
+                Data = new { transaction.Id }
+            });
         }
     }
-
 }
