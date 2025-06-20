@@ -1,4 +1,5 @@
 ﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Ingredient;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Http;
@@ -35,7 +36,12 @@ namespace DUANTOTNGHIEP.Controllers
                     ProviderName = i.Provider.Name
                 }).ToListAsync();
 
-            return Ok(ingredients);
+            return Ok(new BaseResponse<List<IngredientDto>>
+            {
+                ErrorCode = 200,
+                Message = "Lấy danh sách nguyên liệu thành công!",
+                Data = ingredients
+            });
         }
 
         // GET: api/ingredients/{id}
@@ -47,7 +53,11 @@ namespace DUANTOTNGHIEP.Controllers
                 .FirstOrDefaultAsync(i => i.Id == id);
 
             if (ingredient == null)
-                return NotFound();
+                return NotFound(new BaseResponse<IngredientDto>
+                {
+                    ErrorCode = 404,
+                    Message = "Nguyên liệu không tồn tại!"
+                });
 
             var dto = new IngredientDto
             {
@@ -59,7 +69,12 @@ namespace DUANTOTNGHIEP.Controllers
                 ProviderName = ingredient.Provider.Name
             };
 
-            return Ok(dto);
+            return Ok(new BaseResponse<IngredientDto>
+            {
+                ErrorCode = 200,
+                Message = "Lấy thông tin nguyên liệu thành công!",
+                Data = dto
+            });
         }
 
         // POST: api/ingredients
@@ -68,7 +83,13 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var provider = await _context.Providers.FindAsync(dto.ProviderId);
             if (provider == null)
-                return NotFound("Provider not found");
+            {
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Nhà cung cấp không tồn tại!"
+                });
+            }
 
             var ingredient = new Ingredient
             {
@@ -86,7 +107,12 @@ namespace DUANTOTNGHIEP.Controllers
             _context.Ingredients.Add(ingredient);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Created successfully", ingredient.Id });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Tạo nguyên liệu thành công!",
+                Data = new { ingredient.Id }
+            });
         }
 
         // PUT: api/ingredients/{id}
@@ -95,7 +121,11 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var ingredient = await _context.Ingredients.FindAsync(id);
             if (ingredient == null)
-                return NotFound();
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Nguyên liệu không tồn tại!"
+                });
 
             ingredient.Name = dto.Name;
             ingredient.Unit = dto.Unit;
@@ -105,7 +135,12 @@ namespace DUANTOTNGHIEP.Controllers
             ingredient.UpdatedBy = "System";
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Updated successfully" });
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Cập nhật nguyên liệu thành công!"
+            });
         }
 
         // DELETE: api/ingredients/{id}
@@ -114,12 +149,20 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var ingredient = await _context.Ingredients.FindAsync(id);
             if (ingredient == null)
-                return NotFound();
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Nguyên liệu không tồn tại!"
+                });
 
             _context.Ingredients.Remove(ingredient);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Deleted successfully" });
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Xóa nguyên liệu thành công!"
+            });
         }
     }
-
 }

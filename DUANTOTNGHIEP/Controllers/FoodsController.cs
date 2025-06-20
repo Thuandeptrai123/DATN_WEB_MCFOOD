@@ -1,4 +1,5 @@
 ﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Food;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Http;
@@ -38,7 +39,12 @@ namespace DUANTOTNGHIEP.Controllers
                     FoodTypeName = f.FoodType.FoodTypeName
                 }).ToListAsync();
 
-            return Ok(foods);
+            return Ok(new BaseResponse<List<FoodDto>>
+            {
+                ErrorCode = 200,
+                Message = "Lấy danh sách món ăn thành công!",
+                Data = foods
+            });
         }
 
         // GET: api/foods/{id}
@@ -50,7 +56,11 @@ namespace DUANTOTNGHIEP.Controllers
                 .FirstOrDefaultAsync(f => f.Id == id);
 
             if (food == null)
-                return NotFound();
+                return NotFound(new BaseResponse<FoodDto>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             var dto = new FoodDto
             {
@@ -63,7 +73,12 @@ namespace DUANTOTNGHIEP.Controllers
                 FoodTypeName = food.FoodType.FoodTypeName
             };
 
-            return Ok(dto);
+            return Ok(new BaseResponse<FoodDto>
+            {
+                ErrorCode = 200,
+                Message = "Lấy món ăn thành công!",
+                Data = dto
+            });
         }
 
         // POST: api/foods
@@ -72,7 +87,11 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var foodType = await _context.FoodTypes.FindAsync(dto.FoodTypeId);
             if (foodType == null)
-                return NotFound("FoodType not found");
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Loại món ăn không tồn tại!"
+                });
 
             string? imageUrl = null;
 
@@ -88,7 +107,6 @@ namespace DUANTOTNGHIEP.Controllers
 
                 imageUrl = "/uploads/food/" + fileName;
             }
-
 
             var food = new Food
             {
@@ -107,7 +125,12 @@ namespace DUANTOTNGHIEP.Controllers
             _context.Foods.Add(food);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Created successfully", food.Id });
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Tạo món ăn thành công!",
+                Data = new { food.Id }
+            });
         }
 
         // PUT: api/foods/{id}
@@ -116,7 +139,11 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var food = await _context.Foods.FindAsync(id);
             if (food == null)
-                return NotFound();
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             food.Name = dto.Name;
             food.Description = dto.Description;
@@ -138,9 +165,13 @@ namespace DUANTOTNGHIEP.Controllers
                 food.ImageUrl = "/uploads/food/" + fileName;
             }
 
-
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Updated successfully" });
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Cập nhật món ăn thành công!"
+            });
         }
 
         // DELETE: api/foods/{id}
@@ -149,18 +180,33 @@ namespace DUANTOTNGHIEP.Controllers
         {
             var food = await _context.Foods.FindAsync(id);
             if (food == null)
-                return NotFound();
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             _context.Foods.Remove(food);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Deleted successfully" });
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Xóa món ăn thành công!"
+            });
         }
 
-    [HttpGet("cookable-quantity/{foodId}")]
+        // GET: api/foods/cookable-quantity/{foodId}
+        [HttpGet("cookable-quantity/{foodId}")]
         public async Task<IActionResult> GetCookableQuantity(Guid foodId)
         {
             var food = await _context.Foods.FindAsync(foodId);
-            if (food == null) return NotFound("Food not found");
+            if (food == null)
+                return NotFound(new BaseResponse<FoodCookableDto>
+                {
+                    ErrorCode = 404,
+                    Message = "Món ăn không tồn tại!"
+                });
 
             var recipes = await _context.Recipes
                 .Include(r => r.Ingredient)
@@ -168,12 +214,19 @@ namespace DUANTOTNGHIEP.Controllers
                 .ToListAsync();
 
             if (!recipes.Any())
-                return Ok(new FoodCookableDto
+            {
+                return Ok(new BaseResponse<FoodCookableDto>
                 {
-                    FoodId = food.Id,
-                    FoodName = food.Name,
-                    MaxCookablePortions = 0
+                    ErrorCode = 200,
+                    Message = "Không có công thức nào cho món ăn.",
+                    Data = new FoodCookableDto
+                    {
+                        FoodId = food.Id,
+                        FoodName = food.Name,
+                        MaxCookablePortions = 0
+                    }
                 });
+            }
 
             int maxPortions = int.MaxValue;
 
@@ -188,11 +241,16 @@ namespace DUANTOTNGHIEP.Controllers
                 maxPortions = Math.Min(maxPortions, possible);
             }
 
-            return Ok(new FoodCookableDto
+            return Ok(new BaseResponse<FoodCookableDto>
             {
-                FoodId = food.Id,
-                FoodName = food.Name,
-                MaxCookablePortions = maxPortions
+                ErrorCode = 200,
+                Message = "Lấy số lượng có thể nấu thành công!",
+                Data = new FoodCookableDto
+                {
+                    FoodId = food.Id,
+                    FoodName = food.Name,
+                    MaxCookablePortions = maxPortions
+                }
             });
         }
     }

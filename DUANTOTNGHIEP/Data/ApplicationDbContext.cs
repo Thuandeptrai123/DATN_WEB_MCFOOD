@@ -17,6 +17,9 @@ namespace DUANTOTNGHIEP.Data
         public DbSet<Ingredient> Ingredients { get; set; }
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<StockTransaction> StockTransactions { get; set; }
+        public DbSet<Combo> Combos { get; set; }
+        public DbSet<ComboDetail> ComboDetails { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
