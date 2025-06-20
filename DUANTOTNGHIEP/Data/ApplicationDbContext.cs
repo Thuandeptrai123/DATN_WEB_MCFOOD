@@ -12,6 +12,11 @@ namespace DUANTOTNGHIEP.Data
         }
 
         public DbSet<FoodType> FoodTypes { get; set; }
+        public DbSet<Provider> Providers { get; set; }
+        public DbSet<Food> Foods { get; set; }
+        public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<Recipe> Recipes { get; set; }
+        public DbSet<StockTransaction> StockTransactions { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
