@@ -64,16 +64,16 @@ namespace DUANTOTNGHIEP
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // 1. Add CORS
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll",
-                    policy =>
-                    {
-                        policy.SetIsOriginAllowed(_ => true)
-                        .AllowAnyHeader()
-                        .AllowCredentials()
-                        .AllowAnyMethod();
-                    });
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000") // React dev server
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials(); // Only if you use cookies or auth
+                });
             });
 
 
@@ -86,7 +86,8 @@ namespace DUANTOTNGHIEP
             }
             app.UseStaticFiles(); // Phục vụ ảnh từ wwwroot
             app.UseHttpsRedirection();
-
+            app.UseRouting();
+            app.UseCors("AllowAll"); // 🔥 This MUST come between UseRouting and UseAuthorization
             app.UseAuthorization();
 
 
