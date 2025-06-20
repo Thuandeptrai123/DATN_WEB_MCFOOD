@@ -1,0 +1,12 @@
+﻿namespace DUANTOTNGHIEP.DTOS.Food
+{
+    public class UpdateFoodDto
+    {
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public Guid FoodTypeId { get; set; }
+        public IFormFile? ImageFile { get; set; }
+    }
+
+}
