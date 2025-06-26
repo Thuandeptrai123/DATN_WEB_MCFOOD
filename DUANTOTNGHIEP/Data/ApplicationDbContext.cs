@@ -22,6 +22,7 @@ namespace DUANTOTNGHIEP.Data
         public DbSet<ComboDetail> ComboDetails { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Invoice> Invoices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -30,6 +31,11 @@ namespace DUANTOTNGHIEP.Data
             .HasOne(ci => ci.Cart)
             .WithMany(c => c.Items)
             .HasForeignKey(ci => ci.CartId);
+
+            builder.Entity<InvoiceItem>()
+            .HasOne(ci => ci.Invoice)
+            .WithMany(c => c.Items)
+            .HasForeignKey(ci => ci.InvoiceId);
 
             // Cấu hình ApplicationRole
             builder.Entity<FoodType>(entity =>
