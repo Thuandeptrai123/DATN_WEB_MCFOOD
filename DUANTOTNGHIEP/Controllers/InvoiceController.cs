@@ -142,7 +142,7 @@ public class InvoiceController : ControllerBase
             case "MoMo":
                 paymentRedirectUrl = $"https://momo.vn/checkout?invoiceId={invoice.Id}";
                 break;
-                // thêm vô nếu muốn UwU
+                // thêm vô nếu muốn UwU 123
             //case "VNPay":
             //    paymentRedirectUrl = $"https://vnpay.vn/checkout?invoiceId={invoice.Id}";
             //    break;
