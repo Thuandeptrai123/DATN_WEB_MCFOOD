@@ -26,48 +26,48 @@ namespace DUANTOTNGHIEP.Controllers
             _userManager = userManager;
             _configuration = configuration;
         }
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] UserRegister_DTO dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        //[HttpPost("register")]
+        //public async Task<IActionResult> Register([FromBody] UserRegister_DTO dto)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
 
-            var existingUserByUsername = await _userManager.FindByNameAsync(dto.UserName);
-            if (existingUserByUsername != null)
-                return BadRequest(new { message = "Tên người dùng đã tồn tại." });
+        //    var existingUserByUsername = await _userManager.FindByNameAsync(dto.UserName);
+        //    if (existingUserByUsername != null)
+        //        return BadRequest(new { message = "Tên người dùng đã tồn tại." });
 
-            var existingUserByEmail = await _userManager.FindByEmailAsync(dto.Email);
-            if (existingUserByEmail != null)
-                return BadRequest(new { message = "Email đã được sử dụng." });
+        //    var existingUserByEmail = await _userManager.FindByEmailAsync(dto.Email);
+        //    if (existingUserByEmail != null)
+        //        return BadRequest(new { message = "Email đã được sử dụng." });
 
-            var newUser = new ApplicationUser
-            {
-                UserName = dto.UserName,
-                Email = dto.Email,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Address = dto.Address,
-                IsEmployee = false, // Mặc định là khách hàng
-                EmailConfirmed = true // bật xác thực email hay không
-            };
+        //    var newUser = new ApplicationUser
+        //    {
+        //        UserName = dto.UserName,
+        //        Email = dto.Email,
+        //        FirstName = dto.FirstName,
+        //        LastName = dto.LastName,
+        //        Address = dto.Address,
+        //        IsEmployee = false, // Mặc định là khách hàng
+        //        EmailConfirmed = true // bật xác thực email hay không
+        //    };
 
-            var result = await _userManager.CreateAsync(newUser, dto.Password);
+        //    var result = await _userManager.CreateAsync(newUser, dto.Password);
 
-            if (result.Succeeded)
-            {
-                // mặc định role "Customer"
-                await _userManager.AddToRoleAsync(newUser, "Customer");
-                return Ok(new { message = "Đăng ký thành công." });
-            }
+        //    if (result.Succeeded)
+        //    {
+        //        // mặc định role "Customer"
+        //        await _userManager.AddToRoleAsync(newUser, "Customer");
+        //        return Ok(new { message = "Đăng ký thành công." });
+        //    }
 
             
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(error.Code, error.Description);
-            }
+        //    foreach (var error in result.Errors)
+        //    {
+        //        ModelState.AddModelError(error.Code, error.Description);
+        //    }
 
-            return BadRequest(ModelState);
-        }
+        //    return BadRequest(ModelState);
+        //}
         [HttpPost("login")]
         public async Task<IActionResult> Login(Login_DTO request)
         {

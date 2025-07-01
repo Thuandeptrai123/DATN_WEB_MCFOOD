@@ -10,6 +10,7 @@ namespace DUANTOTNGHIEP.Models
         public string LastName { get; set; }
 
         public string Address { get; set; }
+        public int PhoneNumbers { get; set; }
 
         public string? ProfileImage { get; set; }
 

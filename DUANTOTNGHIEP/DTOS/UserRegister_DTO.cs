@@ -9,7 +9,8 @@ namespace DUANTOTNGHIEP.DTOS
         [Required(ErrorMessage = "Tên người dùng không được để trống.")]
         public string LastName { get; set; }
         public string? UserName { get; set; }
-
+        [Required(ErrorMessage = "Số điện thoại không được để trống.")]
+        public int PhoneNumbers { get; set; }
         [Required(ErrorMessage = "Email không được để trống.")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
         public string Email { get; set; }
