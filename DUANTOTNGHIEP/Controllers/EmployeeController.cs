@@ -1,6 +1,7 @@
-﻿using DUANTOTNGHIEP.Data;
-using DUANTOTNGHIEP.DTOS.BaseResponses;
+﻿using Azure.Core;
+using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.DTOS;
+using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -37,6 +38,7 @@ namespace DUANTOTNGHIEP.Controllers
                 UserName = user.UserName,
                 Email = user.Email,
                 FirstName = user.FirstName,
+                PhoneNumbers = user.PhoneNumbers,
                 LastName = user.LastName,
                 Address = user.Address
             }).ToList();
@@ -75,6 +77,7 @@ namespace DUANTOTNGHIEP.Controllers
                 UserName = employee.UserName,
                 Email = employee.Email,
                 FirstName = employee.FirstName,
+                PhoneNumbers = employee.PhoneNumbers,
                 LastName = employee.LastName,
                 Address = employee.Address
             };
@@ -116,6 +119,7 @@ namespace DUANTOTNGHIEP.Controllers
                 UserName = request.Email,
                 Email = request.Email,
                 FirstName = request.FirstName,
+                PhoneNumbers = request.PhoneNumbers,
                 LastName = request.LastName,
                 Address = request.Address,
                 ProfileImage = null
@@ -194,6 +198,13 @@ namespace DUANTOTNGHIEP.Controllers
             user.FirstName = request.FirstName ?? user.FirstName;
             user.LastName = request.LastName ?? user.LastName;
             user.Address = request.Address ?? user.Address;
+            if (request.PhoneNumbers != null)
+            {
+                user.PhoneNumbers = request.PhoneNumbers;
+            }else
+            {
+                user.PhoneNumbers = user.PhoneNumbers;
+            }
 
             var result = await _userManager.UpdateAsync(user);
 

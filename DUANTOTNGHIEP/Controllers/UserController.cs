@@ -1,11 +1,12 @@
-﻿using DUANTOTNGHIEP.Data;
-using DUANTOTNGHIEP.DTOS.BaseResponses;
+﻿using Azure.Core;
+using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.DTOS;
+using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
 namespace DUANTOTNGHIEP.Controllers
 {
@@ -39,6 +40,7 @@ namespace DUANTOTNGHIEP.Controllers
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Address = user.Address,
+                PhoneNumbers = user.PhoneNumbers,
                 ProfileImage = user.ProfileImage,
             }).ToList();
 
@@ -78,6 +80,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                PhoneNumbers = user.PhoneNumbers,
                 Address = user.Address,
                 ProfileImage = user.ProfileImage,
             };
@@ -120,6 +123,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
+                PhoneNumbers = request.PhoneNumbers,
                 Address = request.Address
             };
 
@@ -219,6 +223,15 @@ namespace DUANTOTNGHIEP.Controllers
             user.FirstName = request.FirstName ?? user.FirstName;
             user.LastName = request.LastName ?? user.LastName;
             user.Address = request.Address ?? user.Address;
+            if (request.PhoneNumbers != null)
+            {
+                user.PhoneNumbers = request.PhoneNumbers;
+            }
+            else
+            {
+                user.PhoneNumbers = user.PhoneNumbers;
+            }
+
 
             if (request.ProfileImage != null && request.ProfileImage.Length > 0)
             {
