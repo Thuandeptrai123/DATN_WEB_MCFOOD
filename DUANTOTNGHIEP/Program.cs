@@ -67,6 +67,7 @@ namespace DUANTOTNGHIEP
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGenNewtonsoftSupport(); // 👈 THÊM DÒNG NÀY
 
             // 1. Add CORS
             builder.Services.AddCors(options =>

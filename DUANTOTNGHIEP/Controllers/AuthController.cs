@@ -69,7 +69,7 @@ namespace DUANTOTNGHIEP.Controllers
         //    return BadRequest(ModelState);
         //}
         [HttpPost("login")]
-        public async Task<IActionResult> Login(Login_DTO request)
+        public async Task<IActionResult> Login([FromBody]Login_DTO request)
         {
             var user = await _userManager.FindByNameAsync(request.UserName);
             if (user != null)
