@@ -3,6 +3,7 @@ using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Serialization;
 
 namespace DUANTOTNGHIEP
 {
@@ -57,7 +58,10 @@ namespace DUANTOTNGHIEP
 
             builder.Services.AddControllers().AddNewtonsoftJson(opt =>
             {
-                opt.SerializerSettings.ContractResolver = null;
+                opt.SerializerSettings.ContractResolver = new DefaultContractResolver
+                {
+                    NamingStrategy = new DefaultNamingStrategy() // 👈 giữ nguyên PascalCase
+                };
             });
 
 
