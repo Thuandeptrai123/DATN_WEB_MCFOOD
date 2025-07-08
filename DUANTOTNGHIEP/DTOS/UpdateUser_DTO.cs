@@ -14,5 +14,7 @@ namespace DUANTOTNGHIEP.DTOS
         [Required(ErrorMessage = "Số điện thoại không được để trống.")]
         public int PhoneNumbers { get; set; }
         public IFormFile? ProfileImage { get; set; }
+
+        public bool? IsActive { get; set; }
     }
 }

@@ -97,6 +97,7 @@ namespace DUANTOTNGHIEP.Controllers
                         UserName = user.UserName!,
                         LastName = user.LastName,
                         FirstName = user.FirstName,
+                        ProfileImage = user.ProfileImage,
                         Token = token,
                     };
                     return Ok(new BaseResponse<LoginResponseDTO> { Data = loginInfo });

@@ -42,6 +42,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Address = user.Address,
                 PhoneNumbers = user.PhoneNumbers,
                 ProfileImage = user.ProfileImage,
+                IsActive = user.IsActive,
             }).ToList();
 
             return Ok(new BaseResponse<List<User_DTO>>
@@ -83,6 +84,7 @@ namespace DUANTOTNGHIEP.Controllers
                 PhoneNumbers = user.PhoneNumbers,
                 Address = user.Address,
                 ProfileImage = user.ProfileImage,
+                IsActive = user.IsActive,
             };
 
             return Ok(new BaseResponse<User_DTO>
@@ -124,7 +126,8 @@ namespace DUANTOTNGHIEP.Controllers
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 PhoneNumbers = request.PhoneNumbers,
-                Address = request.Address
+                Address = request.Address,
+                IsActive = true
             };
 
             if (request.ProfileImage != null && request.ProfileImage.Length > 0)
@@ -223,6 +226,7 @@ namespace DUANTOTNGHIEP.Controllers
             user.FirstName = request.FirstName ?? user.FirstName;
             user.LastName = request.LastName ?? user.LastName;
             user.Address = request.Address ?? user.Address;
+            user.IsActive = request.IsActive ?? true;
             if (request.PhoneNumbers != null)
             {
                 user.PhoneNumbers = request.PhoneNumbers;

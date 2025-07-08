@@ -15,5 +15,7 @@ namespace DUANTOTNGHIEP.Models
         public string? ProfileImage { get; set; }
 
         public bool IsEmployee { get; set; }   // true nếu là nhân viên
+
+        public bool IsActive { get; set; }
     }
 }

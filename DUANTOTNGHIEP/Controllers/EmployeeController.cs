@@ -40,7 +40,8 @@ namespace DUANTOTNGHIEP.Controllers
                 FirstName = user.FirstName,
                 PhoneNumbers = user.PhoneNumbers,
                 LastName = user.LastName,
-                Address = user.Address
+                Address = user.Address,
+                IsActive = user.IsActive,
             }).ToList();
 
             return Ok(new BaseResponse<List<User_DTO>>
@@ -79,7 +80,8 @@ namespace DUANTOTNGHIEP.Controllers
                 FirstName = employee.FirstName,
                 PhoneNumbers = employee.PhoneNumbers,
                 LastName = employee.LastName,
-                Address = employee.Address
+                Address = employee.Address,
+                IsActive = employee.IsActive,
             };
 
             return Ok(new BaseResponse<User_DTO>
@@ -122,7 +124,8 @@ namespace DUANTOTNGHIEP.Controllers
                 PhoneNumbers = request.PhoneNumbers,
                 LastName = request.LastName,
                 Address = request.Address,
-                ProfileImage = null
+                ProfileImage = null,
+                IsActive = true
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -198,6 +201,7 @@ namespace DUANTOTNGHIEP.Controllers
             user.FirstName = request.FirstName ?? user.FirstName;
             user.LastName = request.LastName ?? user.LastName;
             user.Address = request.Address ?? user.Address;
+            user.IsActive = request.IsActive ?? true;
             if (request.PhoneNumbers != null)
             {
                 user.PhoneNumbers = request.PhoneNumbers;
