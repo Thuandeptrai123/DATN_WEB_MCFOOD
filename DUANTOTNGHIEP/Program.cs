@@ -54,7 +54,12 @@ namespace DUANTOTNGHIEP
                     ValidateLifetime = true
                 };
             });
-
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminOnly", policy => policy.RequireRole("ADMIN"));
+                options.AddPolicy("UserOnly", policy => policy.RequireRole("STAFF"));
+                options.AddPolicy("EmployeeOnly", policy => policy.RequireRole("Customer"));
+            });
 
             builder.Services.AddControllers().AddNewtonsoftJson(opt =>
             {

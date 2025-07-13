@@ -41,6 +41,7 @@ namespace DUANTOTNGHIEP.Controllers
                 PhoneNumbers = user.PhoneNumbers,
                 LastName = user.LastName,
                 Address = user.Address,
+                ProfileImage = user.ProfileImage,
                 IsActive = user.IsActive,
             }).ToList();
 
@@ -81,6 +82,7 @@ namespace DUANTOTNGHIEP.Controllers
                 PhoneNumbers = employee.PhoneNumbers,
                 LastName = employee.LastName,
                 Address = employee.Address,
+                ProfileImage = employee.ProfileImage,
                 IsActive = employee.IsActive,
             };
 
@@ -124,9 +126,33 @@ namespace DUANTOTNGHIEP.Controllers
                 PhoneNumbers = request.PhoneNumbers,
                 LastName = request.LastName,
                 Address = request.Address,
-                ProfileImage = null,
                 IsActive = true
             };
+
+            if (request.ProfileImage != null && request.ProfileImage.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.ProfileImage.CopyToAsync(stream);
+                }
+
+                // Lưu đường dẫn tương đối vào DB
+                user.ProfileImage = $"/uploads/{uniqueFileName}";
+                await _userManager.UpdateAsync(user);
+            }
+            else
+            {
+                user.ProfileImage = "/uploads/default-avatar.png";
+            }
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (result.Succeeded)
@@ -162,6 +188,102 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result.Errors
             });
         }
+
+        [HttpPost("admin-register")]
+        public async Task<IActionResult> AdminRegister([FromForm] UserRegister_DTO request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new BaseResponse<string>
+                {
+                    ErrorCode = 400,
+                    Message = "Dữ liệu không hợp lệ",
+                    Data = null
+                });
+            }
+
+            var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
+            if (existingUserByEmail != null)
+            {
+                return BadRequest(new BaseResponse<string>
+                {
+                    ErrorCode = 400,
+                    Message = "Email đã tồn tại. Vui lòng sử dụng email khác.",
+                    Data = null
+                });
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                PhoneNumbers = request.PhoneNumbers,
+                LastName = request.LastName,
+                Address = request.Address,
+                IsActive = true
+            };
+
+            if (request.ProfileImage != null && request.ProfileImage.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.ProfileImage.CopyToAsync(stream);
+                }
+
+                // Lưu đường dẫn tương đối vào DB
+                user.ProfileImage = $"/uploads/{uniqueFileName}";
+                await _userManager.UpdateAsync(user);
+            }
+
+            else
+            {
+                user.ProfileImage = "/uploads/default-avatar.png";
+            }
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (result.Succeeded)
+            {
+                if (!await _roleManager.RoleExistsAsync("ADMIN"))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole("ADMIN"));
+                }
+
+                await _userManager.AddToRoleAsync(user, "ADMIN");
+
+                //var cart = new Cart
+                //{
+                //    UserId = user.Id,
+                //    CreatedDate = DateTime.UtcNow
+                //};
+
+                //_context.Carts.Add(cart);
+                //await _context.SaveChangesAsync();
+
+                return Ok(new BaseResponse<string>
+                {
+                    ErrorCode = 200,
+                    Message = "Đăng ký STAFF thành công!",
+                    Data = user.Id
+                });
+            }
+
+            return BadRequest(new BaseResponse<object>
+            {
+                ErrorCode = 400,
+                Message = "Đăng ký thất bại",
+                Data = result.Errors
+            });
+        }
+
         [HttpPut]
         public async Task<IActionResult> UpdateUser([FromForm] UpdateUser_DTO request)
         {
@@ -209,7 +331,26 @@ namespace DUANTOTNGHIEP.Controllers
             {
                 user.PhoneNumbers = user.PhoneNumbers;
             }
+            if (request.ProfileImage != null && request.ProfileImage.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
 
+                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.ProfileImage.CopyToAsync(stream);
+                }
+
+                // Lưu đường dẫn tương đối vào DB
+                user.ProfileImage = $"/uploads/{uniqueFileName}";
+                await _userManager.UpdateAsync(user);
+            }
             var result = await _userManager.UpdateAsync(user);
 
             if (result.Succeeded)
@@ -226,6 +367,90 @@ namespace DUANTOTNGHIEP.Controllers
             {
                 ErrorCode = 400,
                 Message = "Cập nhật thất bại",
+                Data = result.Errors
+            });
+        }
+        [Authorize(Roles = "ADMIN")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> SoftDeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse<string>
+                {
+                    ErrorCode = 404,
+                    Message = "Nhân viên không tồn tại",
+                    Data = null
+                });
+            }
+
+            // Kiểm tra nếu không phải là STAFF thì không cho xóa
+            var isStaff = await _userManager.IsInRoleAsync(user, "STAFF");
+            if (!isStaff)
+            {
+                return Forbid();
+            }
+
+            // Đánh dấu là không còn hoạt động
+            user.IsActive = false;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new BaseResponse<string>
+                {
+                    ErrorCode = 200,
+                    Message = "Xóa mềm nhân viên thành công!",
+                    Data = user.Id
+                });
+            }
+
+            return BadRequest(new BaseResponse<object>
+            {
+                ErrorCode = 400,
+                Message = "Xóa mềm thất bại",
+                Data = result.Errors
+            });
+        }
+        [Authorize(Roles = "ADMIN")]
+        [HttpPut("{id}/restore")]
+        public async Task<IActionResult> RestoreUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse<string>
+                {
+                    ErrorCode = 404,
+                    Message = "Nhân viên không tồn tại",
+                    Data = null
+                });
+            }
+
+            var isStaff = await _userManager.IsInRoleAsync(user, "STAFF");
+            if (!isStaff)
+            {
+                return Forbid();
+            }
+
+            user.IsActive = true;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new BaseResponse<string>
+                {
+                    ErrorCode = 200,
+                    Message = "Khôi phục nhân viên thành công!",
+                    Data = user.Id
+                });
+            }
+
+            return BadRequest(new BaseResponse<object>
+            {
+                ErrorCode = 400,
+                Message = "Khôi phục thất bại",
                 Data = result.Errors
             });
         }

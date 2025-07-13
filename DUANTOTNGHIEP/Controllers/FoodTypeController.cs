@@ -2,6 +2,7 @@
 using DUANTOTNGHIEP.DTOS;
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,7 @@ namespace DUANTOTNGHIEP.Controllers
         {
             _context = context;
         }
+        [Authorize(Roles = "ADMIN")]
 
         [HttpGet]
         public async Task<ActionResult<BaseResponse<IEnumerable<FoodType_DTO>>>> GetFoodTypes()

@@ -277,6 +277,92 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result.Errors
             });
         }
+
+        [Authorize(Roles = "ADMIN, STAFF")]
+        [HttpPut("{id}/restore")]
+        public async Task<IActionResult> RestoreUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse<string>
+                {
+                    ErrorCode = 404,
+                    Message = "Khách hàng không tồn tại",
+                    Data = null
+                });
+            }
+
+            var isStaff = await _userManager.IsInRoleAsync(user, "Customer");
+            if (!isStaff)
+            {
+                return Forbid();
+            }
+
+            user.IsActive = true;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new BaseResponse<string>
+                {
+                    ErrorCode = 200,
+                    Message = "Khôi phục khách hàng thành công!",
+                    Data = user.Id
+                });
+            }
+
+            return BadRequest(new BaseResponse<object>
+            {
+                ErrorCode = 400,
+                Message = "Khôi phục thất bại",
+                Data = result.Errors
+            });
+        }
+
+        [Authorize(Roles = "ADMIN, STAFF")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> SoftDeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse<string>
+                {
+                    ErrorCode = 404,
+                    Message = "Khách hàng không tồn tại",
+                    Data = null
+                });
+            }
+
+            // Kiểm tra nếu không phải là STAFF thì không cho xóa
+            var isStaff = await _userManager.IsInRoleAsync(user, "Customer");
+            if (!isStaff)
+            {
+                return Forbid();
+            }
+
+            // Đánh dấu là không còn hoạt động
+            user.IsActive = false;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new BaseResponse<string>
+                {
+                    ErrorCode = 200,
+                    Message = "Xóa mềm khách hàng thành công!",
+                    Data = user.Id
+                });
+            }
+
+            return BadRequest(new BaseResponse<object>
+            {
+                ErrorCode = 400,
+                Message = "Xóa mềm thất bại",
+                Data = result.Errors
+            });
+        }
         [Authorize(Roles = "Customer,STAFF")]
         [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePassword_DTO request)
