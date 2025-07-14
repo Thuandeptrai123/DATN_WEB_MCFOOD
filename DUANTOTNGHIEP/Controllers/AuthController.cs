@@ -60,7 +60,7 @@ namespace DUANTOTNGHIEP.Controllers
         //        return Ok(new { message = "Đăng ký thành công." });
         //    }
 
-            
+
         //    foreach (var error in result.Errors)
         //    {
         //        ModelState.AddModelError(error.Code, error.Description);
@@ -68,8 +68,8 @@ namespace DUANTOTNGHIEP.Controllers
 
         //    return BadRequest(ModelState);
         //}
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody]Login_DTO request)
+        [HttpPost("login-admin")]
+        public async Task<IActionResult> Login([FromBody] Login_DTO request)
         {
             var user = await _userManager.FindByNameAsync(request.UserName);
             if (user != null)
@@ -77,14 +77,24 @@ namespace DUANTOTNGHIEP.Controllers
                 if (await _userManager.CheckPasswordAsync(user, request.Password))
                 {
                     var roles = await _userManager.GetRolesAsync(user);
-                    var authClaims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Sid, user.Id),
-                        new Claim(ClaimTypes.Name, user.UserName!),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                    };
 
-                    // Add role claims
+                    // ✅ Kiểm tra xem có phải role admin hoặc nhân viên
+                    if (!roles.Contains("ADMIN") && !roles.Contains("STAFF"))
+                    {
+                        return Unauthorized(new BaseResponse<string>
+                        {
+                            ErrorCode = 403,
+                            Message = "Bạn không có quyền đăng nhập vào hệ thống quản trị."
+                        });
+                    }
+
+                    var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Sid, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
                     foreach (var role in roles)
                     {
                         authClaims.Add(new Claim(ClaimTypes.Role, role));
@@ -100,6 +110,7 @@ namespace DUANTOTNGHIEP.Controllers
                         ProfileImage = user.ProfileImage,
                         Token = token,
                     };
+
                     return Ok(new BaseResponse<LoginResponseDTO> { Data = loginInfo });
                 }
             }
@@ -107,9 +118,76 @@ namespace DUANTOTNGHIEP.Controllers
             return Unauthorized(new BaseResponse<string>
             {
                 ErrorCode = 401,
-                Message = "Invalid credentials"
+                Message = "Tài khoản hoặc mật khẩu không đúng."
             });
         }
+
+
+        [HttpPost("login-customer")]
+        public async Task<IActionResult> LoginCustomer([FromBody] Login_DTO request)
+        {
+            var user = await _userManager.FindByNameAsync(request.UserName);
+            if (user != null)
+            {
+                if (await _userManager.CheckPasswordAsync(user, request.Password))
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+
+                    // ✅ Chỉ cho phép đăng nhập nếu có role là "Customer"
+                    if (!roles.Contains("Customer"))
+                    {
+                        return Unauthorized(new BaseResponse<string>
+                        {
+                            ErrorCode = 403,
+                            Message = "Bạn không có quyền đăng nhập vào khu vực khách hàng."
+                        });
+                    }
+
+                    // ✅ Nếu tài khoản bị khóa
+                    if (!user.IsActive)
+                    {
+                        return Unauthorized(new BaseResponse<string>
+                        {
+                            ErrorCode = 403,
+                            Message = "Tài khoản của bạn đã bị khóa."
+                        });
+                    }
+
+                    var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Sid, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+                    foreach (var role in roles)
+                    {
+                        authClaims.Add(new Claim(ClaimTypes.Role, role));
+                    }
+
+                    var token = GenerateJwtToken(authClaims);
+                    var loginInfo = new LoginResponseDTO
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName!,
+                        LastName = user.LastName,
+                        FirstName = user.FirstName,
+                        ProfileImage = user.ProfileImage,
+                        Token = token,
+                    };
+
+                    return Ok(new BaseResponse<LoginResponseDTO> { Data = loginInfo });
+                }
+            }
+
+            return Unauthorized(new BaseResponse<string>
+            {
+                ErrorCode = 401,
+                Message = "Tài khoản hoặc mật khẩu không đúng."
+            });
+        }
+
+
 
         private string GenerateJwtToken(List<Claim> claims)
         {
