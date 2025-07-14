@@ -95,7 +95,7 @@ namespace DUANTOTNGHIEP.Controllers
             });
         }
 
-        [HttpPost]
+        [HttpPost("register_customer")]
         public async Task<IActionResult> Register([FromForm] UserRegister_DTO request)
         {
             if (!ModelState.IsValid)

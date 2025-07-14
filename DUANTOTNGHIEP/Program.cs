@@ -79,7 +79,7 @@ namespace DUANTOTNGHIEP
             {
                 options.AddPolicy("AllowAll", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000") // React dev server
+                    policy.WithOrigins("http://localhost:3000", "http://localhost:3001") // React dev server
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials(); // Only if you use cookies or auth
