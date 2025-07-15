@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Web;
 
 namespace DUANTOTNGHIEP.Controllers
 {
@@ -18,13 +19,22 @@ namespace DUANTOTNGHIEP.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager; // Thêm RoleManager
         private readonly IWebHostEnvironment _env;
-
-        public UserController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext context, IWebHostEnvironment env)
+        private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _config;
+        public UserController(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            ApplicationDbContext context,
+            IWebHostEnvironment env,
+            IEmailSender emailSender,
+            IConfiguration config)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
             _env = env;
+            _emailSender = emailSender;
+            _config = config;
         }
 
         [HttpGet]
@@ -108,85 +118,107 @@ namespace DUANTOTNGHIEP.Controllers
                 });
             }
 
-            var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
-            if (existingUserByEmail != null)
+            try
             {
-                return BadRequest(new BaseResponse<string>
+                var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
+                if (existingUserByEmail != null)
                 {
-                    ErrorCode = 400,
-                    Message = "Email đã tồn tại. Vui lòng sử dụng email khác.",
-                    Data = null
-                });
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = request.Email, // Dùng email làm username
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                PhoneNumbers = request.PhoneNumbers,
-                Address = request.Address,
-                IsActive = true
-            };
-
-            if (request.ProfileImage != null && request.ProfileImage.Length > 0)
-            {
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
+                    return BadRequest(new BaseResponse<string>
+                    {
+                        ErrorCode = 400,
+                        Message = "Email đã tồn tại. Vui lòng sử dụng email khác.",
+                        Data = null
+                    });
                 }
 
-                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                var user = new ApplicationUser
                 {
-                    await request.ProfileImage.CopyToAsync(stream);
+                    UserName = request.UserName ?? request.Email,
+                    Email = request.Email,
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    PhoneNumbers = request.PhoneNumbers,
+                    Address = request.Address,
+                    IsActive = true,
+                    EmailConfirmed = false
+                };
+
+                if (request.ProfileImage != null && request.ProfileImage.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(request.ProfileImage.FileName);
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.ProfileImage.CopyToAsync(stream);
+                    }
+
+                    // ❌ KHÔNG cần gọi UpdateAsync tại đây
+                    user.ProfileImage = $"/uploads/{uniqueFileName}";
+                }
+                else
+                {
+                    user.ProfileImage = "/uploads/default-avatar.png";
                 }
 
-                // Lưu đường dẫn tương đối vào DB
-                user.ProfileImage = $"/uploads/{uniqueFileName}";
-                await _userManager.UpdateAsync(user);
-            } else {
-                user.ProfileImage = "/uploads/default-avatar.png";
-            }
+                var result = await _userManager.CreateAsync(user, request.Password);
+                if (!result.Succeeded)
+                {
+                    return BadRequest(new BaseResponse<object>
+                    {
+                        ErrorCode = 400,
+                        Message = "Đăng ký thất bại",
+                        Data = result.Errors
+                    });
+                }
 
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (result.Succeeded)
-            {
+                // Tạo role nếu chưa có
                 if (!await _roleManager.RoleExistsAsync("Customer"))
-                {
                     await _roleManager.CreateAsync(new IdentityRole("Customer"));
-                }
 
                 await _userManager.AddToRoleAsync(user, "Customer");
 
-                //var cart = new Cart
-                //{
-                //    UserId = user.Id,
-                //    CreatedDate = DateTime.UtcNow
-                //};
+                // Tạo token xác nhận email
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedToken = HttpUtility.UrlEncode(token);
+                var confirmUrl = $"{_config["FrontendUrl"]}/confirm-email?userId={user.Id}&token={encodedToken}";
 
-                //_context.Carts.Add(cart);
-                //await _context.SaveChangesAsync();
+                var emailMessage = $@"
+            <h3>Chào {user.UserName},</h3>
+            <p>Bạn đã đăng ký tài khoản tại <strong>MCFoods</strong>.</p>
+            <p>Vui lòng <a href='{confirmUrl}'>bấm vào đây để xác nhận email</a> và hoàn tất đăng ký.</p>
+            <p>Nếu bạn không thực hiện đăng ký này, vui lòng bỏ qua email này.</p>";
+
+                await _emailSender.SendEmailAsync(user.Email, "Xác nhận Email - MCFoods", emailMessage);
 
                 return Ok(new BaseResponse<string>
                 {
                     ErrorCode = 200,
-                    Message = "Đăng ký User thành công!",
-                    Data = user.Id
+                    Message = "Tài khoản đã được tạo. Vui lòng kiểm tra email để xác nhận đăng ký.",
+                    Data = null
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("🔥 Lỗi khi đăng ký:");
+                Console.WriteLine(ex.ToString()); // Hiển thị toàn bộ lỗi chi tiết
+
+                return StatusCode(500, new BaseResponse<string>
+                {
+                    ErrorCode = 500,
+                    Message = "Lỗi hệ thống: " + ex.Message,
+                    Data = null
                 });
             }
 
-            return BadRequest(new BaseResponse<object>
-            {
-                ErrorCode = 400,
-                Message = "Đăng ký thất bại",
-                Data = result.Errors
-            });
         }
+
         [HttpPut]
         public async Task<IActionResult> UpdateUser([FromForm] UpdateUser_DTO request)
         {
@@ -430,5 +462,21 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result.Errors
             });
         }
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound("Người dùng không tồn tại");
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                return Ok("Email xác nhận thành công! Bạn có thể đăng nhập.");
+            }
+
+            return BadRequest("Xác nhận email thất bại.");
+        }
+
     }
 }

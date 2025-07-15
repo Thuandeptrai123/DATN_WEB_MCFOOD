@@ -126,6 +126,16 @@ namespace DUANTOTNGHIEP.Controllers
         [HttpPost("login-customer")]
         public async Task<IActionResult> LoginCustomer([FromBody] Login_DTO request)
         {
+            Console.WriteLine($"👉 Nhận login: {request?.UserName} / {request?.Password}");
+
+            if (string.IsNullOrWhiteSpace(request?.UserName) || string.IsNullOrWhiteSpace(request?.Password))
+            {
+                return BadRequest(new BaseResponse<string>
+                {
+                    ErrorCode = 400,
+                    Message = "Tên đăng nhập và mật khẩu không được để trống."
+                });
+            }
             var user = await _userManager.FindByNameAsync(request.UserName);
             if (user != null)
             {
@@ -150,6 +160,15 @@ namespace DUANTOTNGHIEP.Controllers
                         {
                             ErrorCode = 403,
                             Message = "Tài khoản của bạn đã bị khóa."
+                        });
+                    }
+                    if (!user.EmailConfirmed)
+                    {
+                        return BadRequest(new BaseResponse<string>
+                        {
+                            ErrorCode = 403,
+                            Message = "Email chưa được xác nhận. Vui lòng kiểm tra email và xác nhận trước khi đăng nhập.",
+                            Data = null
                         });
                     }
 
@@ -277,6 +296,21 @@ namespace DUANTOTNGHIEP.Controllers
             var firstName = string.Join(" ", parts.Take(parts.Length - 1));
 
             return (firstName, lastName);
+        }
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return BadRequest("Không tìm thấy người dùng.");
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                return Ok("Email đã được xác nhận thành công.");
+            }
+
+            return BadRequest("Xác nhận email thất bại.");
         }
 
     }

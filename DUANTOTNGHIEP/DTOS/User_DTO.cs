@@ -10,7 +10,7 @@ namespace DUANTOTNGHIEP.DTOS
         public string UserName { get; set; }
         public string Email { get; set; }
         public string Address { get; set; }
-        public int PhoneNumbers { get; set; }
+        public string PhoneNumbers { get; set; }
         public string? ProfileImage { get; set; }
 
         public bool IsActive { get; set; }
