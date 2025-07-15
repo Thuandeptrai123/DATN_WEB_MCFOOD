@@ -10,7 +10,8 @@ namespace DUANTOTNGHIEP.DTOS
         public string LastName { get; set; }
         public string? UserName { get; set; }
         [Required(ErrorMessage = "Số điện thoại không được để trống.")]
-        public int PhoneNumbers { get; set; }
+        [RegularExpression(@"^[0-9]{9,11}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
+        public string PhoneNumbers { get; set; } // ✅ Đổi từ int → string
         [Required(ErrorMessage = "Email không được để trống.")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
         public string Email { get; set; }

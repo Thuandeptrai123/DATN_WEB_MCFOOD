@@ -1,4 +1,5 @@
 ﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.DTOS;
 using DUANTOTNGHIEP.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -69,10 +70,12 @@ namespace DUANTOTNGHIEP
                 };
             });
 
+            builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddSwaggerGenNewtonsoftSupport(); // 👈 THÊM DÒNG NÀY
+            builder.Services.AddScoped<IEmailSender, EmailSender>();
 
             // 1. Add CORS
             builder.Services.AddCors(options =>
@@ -91,6 +94,7 @@ namespace DUANTOTNGHIEP
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
+                app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
