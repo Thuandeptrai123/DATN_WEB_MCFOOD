@@ -219,7 +219,7 @@ namespace DUANTOTNGHIEP.Controllers
 
         }
 
-        [HttpPut]
+        [HttpPut("update-profile")]
         public async Task<IActionResult> UpdateUser([FromForm] UpdateUser_DTO request)
         {
             if (!ModelState.IsValid)
@@ -477,6 +477,52 @@ namespace DUANTOTNGHIEP.Controllers
 
             return BadRequest("Xác nhận email thất bại.");
         }
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetProfileMe()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.Sid)?.Value;
 
+            if (userId == null)
+            {
+                return Unauthorized(new BaseResponse<string>
+                {
+                    ErrorCode = 401,
+                    Message = "Không xác định được người dùng",
+                    Data = null
+                });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse<string>
+                {
+                    ErrorCode = 404,
+                    Message = "Người dùng không tồn tại",
+                    Data = null
+                });
+            }
+
+            var userResponse = new User_DTO
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumbers = user.PhoneNumbers,
+                Address = user.Address,
+                ProfileImage = user.ProfileImage,
+                IsActive = user.IsActive,
+            };
+
+            return Ok(new BaseResponse<User_DTO>
+            {
+                ErrorCode = 200,
+                Message = "Lấy thông tin người dùng thành công!",
+                Data = userResponse
+            });
+        }
     }
 }
