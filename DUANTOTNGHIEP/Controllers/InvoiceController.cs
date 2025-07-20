@@ -20,10 +20,10 @@ public class InvoiceController : ControllerBase
     public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
     {
         var cart = await _context.Carts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.CustomerId == dto.CustomerId);
+            .Include(c => c.CartItems) // SỬA Ở ĐÂY
+            .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId); // SỬA CustomerId thành UserId nếu theo model
 
-        if (cart == null || cart.Items.Count == 0)
+        if (cart == null || cart.CartItems.Count == 0) // SỬA Ở ĐÂY
         {
             return BadRequest(new BaseResponse<string>
             {
@@ -32,20 +32,19 @@ public class InvoiceController : ControllerBase
             });
         }
 
-        // Tính tổng tiền giả lập (giả định mỗi món 50k)
         decimal total = 0;
         var invoiceItems = new List<InvoiceItem>();
 
-        foreach (var item in cart.Items)
+        foreach (var item in cart.CartItems) // SỬA Ở ĐÂY
         {
-            decimal unitPrice = 50000; // TODO: lấy từ bảng Foods hoặc Combos thực tế
+            decimal unitPrice = 50000;
             total += unitPrice * item.Quantity;
 
             invoiceItems.Add(new InvoiceItem
             {
                 Id = Guid.NewGuid(),
-                FoodId = item.FoodId,
-                ComboId = item.ComboId,
+                FoodId = item.FoodID, // SỬA FoodId thành FoodID theo model bạn gửi
+                ComboId = item.ComboID,
                 Quantity = item.Quantity,
                 UnitPrice = unitPrice
             });
@@ -66,14 +65,14 @@ public class InvoiceController : ControllerBase
 
         _context.Invoices.Add(invoice);
 
-        // Xóa giỏ hàng sau khi tạo hóa đơn
-        _context.CartItems.RemoveRange(cart.Items);
+        _context.CartItems.RemoveRange(cart.CartItems); // SỬA Ở ĐÂY
         _context.Carts.Remove(cart);
 
         await _context.SaveChangesAsync();
 
         return Ok(new BaseResponse<Invoice> { Data = invoice });
     }
+
 
     [HttpGet("{customerId}")]
     public async Task<IActionResult> GetInvoicesByCustomer(Guid customerId)

@@ -69,6 +69,10 @@ namespace DUANTOTNGHIEP
                     NamingStrategy = new DefaultNamingStrategy() // 👈 giữ nguyên PascalCase
                 };
             });
+            builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+
 
             builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 

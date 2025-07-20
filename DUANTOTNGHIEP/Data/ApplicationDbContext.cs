@@ -29,7 +29,7 @@ namespace DUANTOTNGHIEP.Data
             base.OnModelCreating(builder);
             builder.Entity<CartItem>()
             .HasOne(ci => ci.Cart)
-            .WithMany(c => c.Items)
+            .WithMany(c => c.CartItems)
             .HasForeignKey(ci => ci.CartId);
 
             builder.Entity<InvoiceItem>()
