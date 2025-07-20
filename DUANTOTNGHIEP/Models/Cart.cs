@@ -1,9 +1,18 @@
-﻿namespace DUANTOTNGHIEP.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace DUANTOTNGHIEP.Models
 {
     public class Cart : BaseModel
     {
-        public Guid CartId { get; set; }
-        public Guid CustomerId { get; set; }
-        public List<CartItem> Items { get; set; } = new();
+        [Key]
+        public Guid CartId { get; set; } = Guid.NewGuid();
+
+        [Required]
+        public Guid UserId { get; set; }
+
+        public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }
+
 }
