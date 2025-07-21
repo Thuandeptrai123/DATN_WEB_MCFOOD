@@ -151,15 +151,21 @@ namespace DUANTOTNGHIEP.Controllers
 
                 if (cart == null)
                 {
+                    var userName = User.Identity?.Name ?? "unknown"; // Lấy tên người dùng từ token
+
                     cart = new Cart
                     {
                         CartId = Guid.NewGuid(),
                         UserId = userId,
-                        CreatedDate = DateTime.UtcNow
+                        CreatedDate = DateTime.UtcNow,
+                        CreatedBy = userName,
+                        UpdatedDate = DateTime.UtcNow,
+                        UpdatedBy = userName
                     };
                     _context.Carts.Add(cart);
                     await _context.SaveChangesAsync();
                 }
+
 
                 List<object> addedItems = new();
 
