@@ -4,6 +4,7 @@ using DUANTOTNGHIEP.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DUANTOTNGHIEP.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250721083213_invoice-his")]
+    partial class invoicehis
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -404,37 +407,6 @@ namespace DUANTOTNGHIEP.Migrations
                     b.ToTable("Invoices");
                 });
 
-            modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceHistory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("InvoiceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvoiceId");
-
-                    b.ToTable("InvoiceHistories");
-                });
-
             modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -760,17 +732,6 @@ namespace DUANTOTNGHIEP.Migrations
                     b.Navigation("Provider");
                 });
 
-            modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceHistory", b =>
-                {
-                    b.HasOne("DUANTOTNGHIEP.Models.Invoice", "Invoice")
-                        .WithMany("Histories")
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Invoice");
-                });
-
             modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceItem", b =>
                 {
                     b.HasOne("DUANTOTNGHIEP.Models.Invoice", "Invoice")
@@ -887,8 +848,6 @@ namespace DUANTOTNGHIEP.Migrations
 
             modelBuilder.Entity("DUANTOTNGHIEP.Models.Invoice", b =>
                 {
-                    b.Navigation("Histories");
-
                     b.Navigation("Items");
                 });
 #pragma warning restore 612, 618

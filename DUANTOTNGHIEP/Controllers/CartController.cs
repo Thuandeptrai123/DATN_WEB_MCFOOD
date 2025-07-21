@@ -19,7 +19,7 @@ namespace DUANTOTNGHIEP.Controllers
             _context = context;
         }
 
-        private Guid GetUserId()
+        private string GetUserId()
         {
             var userIdClaim = User.Claims.FirstOrDefault(c =>
                 c.Type == ClaimTypes.Sid || // Đây là dạng đã được dùng trong login
@@ -28,7 +28,7 @@ namespace DUANTOTNGHIEP.Controllers
             if (userIdClaim == null)
                 throw new UnauthorizedAccessException("Không tìm thấy userId trong token.");
 
-            return Guid.Parse(userIdClaim.Value);
+            return userIdClaim.Value;
         }
 
         // GET: api/cart/user-cart
@@ -40,7 +40,7 @@ namespace DUANTOTNGHIEP.Controllers
             {
                 var userId = GetUserId(); // Lấy userId từ token
 
-                if (userId == Guid.Empty)
+                if (userId == "" || userId == null)
                 {
                     return Unauthorized(new { message = "Người dùng chưa đăng nhập." });
                 }

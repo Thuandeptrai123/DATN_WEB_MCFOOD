@@ -24,6 +24,7 @@ namespace DUANTOTNGHIEP.Data
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
 
+        public DbSet<InvoiceHistory> InvoiceHistories { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -36,6 +37,11 @@ namespace DUANTOTNGHIEP.Data
             .HasOne(ci => ci.Invoice)
             .WithMany(c => c.Items)
             .HasForeignKey(ci => ci.InvoiceId);
+
+            builder.Entity<InvoiceHistory>()
+            .HasOne(h => h.Invoice)
+            .WithMany(i => i.Histories)
+            .HasForeignKey(h => h.InvoiceId);
 
             // Cấu hình ApplicationRole
             builder.Entity<FoodType>(entity =>
