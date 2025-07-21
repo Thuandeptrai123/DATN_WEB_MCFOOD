@@ -8,7 +8,7 @@ namespace DUANTOTNGHIEP.Models
         public Guid CartId { get; set; } = Guid.NewGuid();
 
         [Required]
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
 
         public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 

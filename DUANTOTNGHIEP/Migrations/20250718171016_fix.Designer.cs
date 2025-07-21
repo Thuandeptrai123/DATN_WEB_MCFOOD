@@ -4,6 +4,7 @@ using DUANTOTNGHIEP.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DUANTOTNGHIEP.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250718171016_fix")]
+    partial class fix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -125,15 +128,15 @@ namespace DUANTOTNGHIEP.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("UpdatedBy")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("CartId");
 
@@ -149,18 +152,11 @@ namespace DUANTOTNGHIEP.Migrations
                     b.Property<Guid>("CartId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ComboID")
+                    b.Property<Guid?>("ComboId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("FoodID")
+                    b.Property<Guid?>("FoodId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -402,37 +398,6 @@ namespace DUANTOTNGHIEP.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Invoices");
-                });
-
-            modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceHistory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("InvoiceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvoiceId");
-
-                    b.ToTable("InvoiceHistories");
                 });
 
             modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceItem", b =>
@@ -711,7 +676,7 @@ namespace DUANTOTNGHIEP.Migrations
             modelBuilder.Entity("DUANTOTNGHIEP.Models.CartItem", b =>
                 {
                     b.HasOne("DUANTOTNGHIEP.Models.Cart", "Cart")
-                        .WithMany("CartItems")
+                        .WithMany("Items")
                         .HasForeignKey("CartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -758,17 +723,6 @@ namespace DUANTOTNGHIEP.Migrations
                         .IsRequired();
 
                     b.Navigation("Provider");
-                });
-
-            modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceHistory", b =>
-                {
-                    b.HasOne("DUANTOTNGHIEP.Models.Invoice", "Invoice")
-                        .WithMany("Histories")
-                        .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Invoice");
                 });
 
             modelBuilder.Entity("DUANTOTNGHIEP.Models.InvoiceItem", b =>
@@ -865,7 +819,7 @@ namespace DUANTOTNGHIEP.Migrations
 
             modelBuilder.Entity("DUANTOTNGHIEP.Models.Cart", b =>
                 {
-                    b.Navigation("CartItems");
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("DUANTOTNGHIEP.Models.Combo", b =>
@@ -887,8 +841,6 @@ namespace DUANTOTNGHIEP.Migrations
 
             modelBuilder.Entity("DUANTOTNGHIEP.Models.Invoice", b =>
                 {
-                    b.Navigation("Histories");
-
                     b.Navigation("Items");
                 });
 #pragma warning restore 612, 618

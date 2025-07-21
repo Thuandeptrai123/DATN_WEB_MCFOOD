@@ -15,6 +15,35 @@ public class InvoiceController : ControllerBase
     {
         _context = context;
     }
+    [HttpGet("customers-with-invoices")]
+    public async Task<IActionResult> GetCustomersWithInvoices()
+    {
+        var result = await _context.Invoices
+            .GroupBy(i => i.CustomerId)
+            .Select(g => new
+            {
+                CustomerId = g.Key,
+                InvoiceCount = g.Count(),
+                LastInvoiceDate = g.Max(i => i.CreatedDate)
+            })
+            .Join(_context.Users,
+                invoiceGroup => invoiceGroup.CustomerId,
+                user => user.Id,
+                (invoiceGroup, user) => new CustomerWithInvoiceDTO
+                {
+                    CustomerId = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    InvoiceCount = invoiceGroup.InvoiceCount,
+                    LastInvoiceDate = invoiceGroup.LastInvoiceDate
+                })
+            .OrderByDescending(c => c.LastInvoiceDate)
+            .ToListAsync();
+
+        return Ok(new BaseResponse<List<CustomerWithInvoiceDTO>> { Data = result });
+    }
+
 
     [HttpPost("create")]
     public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
@@ -75,7 +104,7 @@ public class InvoiceController : ControllerBase
 
 
     [HttpGet("{customerId}")]
-    public async Task<IActionResult> GetInvoicesByCustomer(Guid customerId)
+    public async Task<IActionResult> GetInvoicesByCustomer(string customerId)
     {
         var invoices = await _context.Invoices
             .Include(i => i.Items)
@@ -104,6 +133,56 @@ public class InvoiceController : ControllerBase
 
         return Ok(new BaseResponse<Invoice> { Data = invoice });
     }
+
+    [HttpPut("update-status/{invoiceId}")]
+    public async Task<IActionResult> UpdateInvoiceStatus(
+    Guid invoiceId,
+    [FromQuery] string newStatus,
+    [FromQuery] string action = "Cập nhật trạng thái",
+    [FromQuery] string updatedBy = "admin")
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.Items)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+        if (invoice == null)
+        {
+            return NotFound(new BaseResponse<string>
+            {
+                ErrorCode = 404,
+                Message = "Không tìm thấy hóa đơn để cập nhật."
+            });
+        }
+
+        var oldStatus = invoice.Status;
+
+        invoice.Status = newStatus;
+        invoice.UpdatedDate = DateTime.Now;
+        invoice.UpdatedBy = updatedBy;
+
+        _context.Invoices.Update(invoice);
+
+        // Ghi lại lịch sử thay đổi
+        _context.InvoiceHistories.Add(new InvoiceHistory
+        {
+            Id = Guid.NewGuid(),
+            InvoiceId = invoice.Id,
+            Status = newStatus,
+            Action = action,
+            UpdatedBy = updatedBy,
+            UpdatedAt = DateTime.Now
+        });
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new BaseResponse<string>
+        {
+            Message = $"✅ Hóa đơn đã cập nhật từ '{oldStatus}' ➜ '{newStatus}' với hành động: {action}"
+        });
+    }
+
+
+
     [HttpPost("process-payment/{invoiceId}")]
     public async Task<IActionResult> ProcessPayment(Guid invoiceId, [FromQuery] string paymentMethod)
     {

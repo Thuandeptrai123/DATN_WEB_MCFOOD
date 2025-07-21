@@ -2,6 +2,6 @@
 {
     public class CreateInvoiceDTO
     {
-        public Guid CustomerId { get; set; }
+        public string CustomerId { get; set; }
     }
 }
