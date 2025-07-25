@@ -162,15 +162,15 @@ namespace DUANTOTNGHIEP.Controllers
                             Message = "Tài khoản của bạn đã bị khóa."
                         });
                     }
-                    if (!user.EmailConfirmed)
-                    {
-                        return BadRequest(new BaseResponse<string>
-                        {
-                            ErrorCode = 403,
-                            Message = "Email chưa được xác nhận. Vui lòng kiểm tra email và xác nhận trước khi đăng nhập.",
-                            Data = null
-                        });
-                    }
+                    //if (!user.EmailConfirmed)
+                    //{
+                    //    return BadRequest(new BaseResponse<string>
+                    //    {
+                    //        ErrorCode = 403,
+                    //        Message = "Email chưa được xác nhận. Vui lòng kiểm tra email và xác nhận trước khi đăng nhập.",
+                    //        Data = null
+                    //    });
+                    //}
 
                     var authClaims = new List<Claim>
             {
