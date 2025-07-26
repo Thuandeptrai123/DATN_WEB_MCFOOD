@@ -585,5 +585,48 @@ public class InvoiceController : ControllerBase
         });
     }
 
+    [HttpGet("statistics/invoices-by-month")]
+    public async Task<IActionResult> GetMonthlyInvoiceCount()
+    {
+        var stats = await _context.Invoices
+            .GroupBy(i => new { i.CreatedDate.Year, i.CreatedDate.Month })
+            .Select(g => new
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                TotalInvoices = g.Count()
+            })
+            .OrderBy(g => g.Year).ThenBy(g => g.Month)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            ErrorCode = 0,
+            Message = (string)null,
+            Data = stats
+        });
+    }
+
+    [HttpGet("statistics/customers-by-month")]
+    public async Task<IActionResult> GetMonthlyCustomerStats()
+    {
+        var stats = await _context.Invoices
+            .GroupBy(i => new { i.CreatedDate.Year, i.CreatedDate.Month })
+            .Select(g => new
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                TotalCustomers = g.Select(i => i.CustomerId).Distinct().Count()
+            })
+            .OrderBy(g => g.Year).ThenBy(g => g.Month)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            ErrorCode = 0,
+            Message = (string)null,
+            Data = stats
+        });
+    }
 
 }
