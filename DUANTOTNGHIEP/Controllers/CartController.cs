@@ -33,7 +33,7 @@ namespace DUANTOTNGHIEP.Controllers
 
         // GET: api/cart/user-cart
         [HttpGet("user-cart")]
-        [Authorize]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> GetCartByUserId()
         {
             try
