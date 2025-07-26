@@ -2,19 +2,37 @@
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Invoice;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 [ApiController]
 [Route("api/[controller]")]
 public class InvoiceController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public InvoiceController(ApplicationDbContext context)
+    public InvoiceController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
+
+    private string GetUserId()
+    {
+        var userIdClaim = User.Claims.FirstOrDefault(c =>
+            c.Type == ClaimTypes.Sid || // Đây là dạng đã được dùng trong login
+            c.Type.EndsWith("sid"));    // dự phòng cho kiểu định danh đầy đủ
+
+        if (userIdClaim == null)
+            throw new UnauthorizedAccessException("Không tìm thấy userId trong token.");
+
+        return userIdClaim.Value;
+    }
+
     [HttpGet("customers-with-invoices")]
     public async Task<IActionResult> GetCustomersWithInvoices()
     {
@@ -45,40 +63,162 @@ public class InvoiceController : ControllerBase
     }
 
 
+    //[HttpPost("create")]
+    //public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
+    //{
+    //    var cart = await _context.Carts
+    //        .Include(c => c.CartItems) // SỬA Ở ĐÂY
+    //        .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId); // SỬA CustomerId thành UserId nếu theo model
+
+    //    if (cart == null || cart.CartItems.Count == 0) // SỬA Ở ĐÂY
+    //    {
+    //        return BadRequest(new BaseResponse<string>
+    //        {
+    //            ErrorCode = 400,
+    //            Message = "Giỏ hàng rỗng hoặc không tồn tại."
+    //        });
+    //    }
+
+    //    decimal total = 0;
+    //    var invoiceItems = new List<InvoiceItem>();
+
+    //    foreach (var item in cart.CartItems) // SỬA Ở ĐÂY
+    //    {
+    //        decimal unitPrice = 50000;
+    //        total += unitPrice * item.Quantity;
+
+    //        invoiceItems.Add(new InvoiceItem
+    //        {
+    //            Id = Guid.NewGuid(),
+    //            FoodId = item.FoodID, // SỬA FoodId thành FoodID theo model bạn gửi
+    //            ComboId = item.ComboID,
+    //            Quantity = item.Quantity,
+    //            UnitPrice = unitPrice
+    //        });
+    //    }
+
+    //    var invoice = new Invoice
+    //    {
+    //        Id = Guid.NewGuid(),
+    //        CustomerId = dto.CustomerId,
+    //        CreatedDate = DateTime.Now,
+    //        CreatedBy = "system",
+    //        UpdatedDate = DateTime.Now,
+    //        UpdatedBy = "system",
+    //        Status = "Pending",
+    //        TotalAmount = total,
+    //        Items = invoiceItems
+    //    };
+
+    //    _context.Invoices.Add(invoice);
+
+    //    _context.CartItems.RemoveRange(cart.CartItems); // SỬA Ở ĐÂY
+    //    _context.Carts.Remove(cart);
+
+    //    await _context.SaveChangesAsync();
+
+    //    return Ok(new BaseResponse<Invoice> { Data = invoice });
+    //}
+
+    //[HttpPost("create")]
+    //public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
+    //{
+    //    var cart = await _context.Carts
+    //        .Include(c => c.CartItems)
+    //        .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId);
+
+    //    if (cart == null || cart.CartItems.Count == 0)
+    //    {
+    //        return BadRequest(new BaseResponse<string>
+    //        {
+    //            ErrorCode = 400,
+    //            Message = "❌ Giỏ hàng rỗng hoặc không tồn tại."
+    //        });
+    //    }
+
+    //    decimal total = 0;
+    //    var invoiceItems = new List<InvoiceItem>();
+
+    //    foreach (var item in cart.CartItems)
+    //    {
+    //        decimal unitPrice = item.Price; // ✅ lấy đúng giá từ CartItem
+    //        total += unitPrice * item.Quantity;
+
+    //        invoiceItems.Add(new InvoiceItem
+    //        {
+    //            Id = Guid.NewGuid(),
+    //            FoodId = item.FoodID,
+    //            ComboId = item.ComboID,
+    //            Quantity = item.Quantity,
+    //            UnitPrice = unitPrice
+    //        });
+    //    }
+
+    //    var invoice = new Invoice
+    //    {
+    //        Id = Guid.NewGuid(),
+    //        CustomerId = dto.CustomerId,
+    //        CreatedDate = DateTime.Now,
+    //        CreatedBy = "system",
+    //        UpdatedDate = DateTime.Now,
+    //        UpdatedBy = "system",
+    //        Status = "Pending",
+    //        TotalAmount = total,
+    //        Items = invoiceItems
+    //    };
+
+    //    _context.Invoices.Add(invoice);
+
+    //    // ✅ Xoá cart items & cart sau khi tạo hoá đơn
+    //    _context.CartItems.RemoveRange(cart.CartItems);
+    //    _context.Carts.Remove(cart);
+
+    //    await _context.SaveChangesAsync();
+
+    //    return Ok(new BaseResponse<Invoice>
+    //    {
+    //        Message = "✅ Tạo hóa đơn thành công.",
+    //        Data = invoice
+    //    });
+    //}
+
     [HttpPost("create")]
     public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
     {
+        // Lấy giỏ hàng theo UserId (từ dto.CustomerId)
         var cart = await _context.Carts
-            .Include(c => c.CartItems) // SỬA Ở ĐÂY
-            .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId); // SỬA CustomerId thành UserId nếu theo model
+            .Include(c => c.CartItems)
+            .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId);
 
-        if (cart == null || cart.CartItems.Count == 0) // SỬA Ở ĐÂY
+        if (cart == null || cart.CartItems.Count == 0)
         {
             return BadRequest(new BaseResponse<string>
             {
                 ErrorCode = 400,
-                Message = "Giỏ hàng rỗng hoặc không tồn tại."
+                Message = "❌ Giỏ hàng rỗng hoặc không tồn tại."
             });
         }
 
+        // Tính tổng và tạo danh sách InvoiceItem
         decimal total = 0;
         var invoiceItems = new List<InvoiceItem>();
 
-        foreach (var item in cart.CartItems) // SỬA Ở ĐÂY
+        foreach (var item in cart.CartItems)
         {
-            decimal unitPrice = 50000;
+            decimal unitPrice = item.Price;
             total += unitPrice * item.Quantity;
 
             invoiceItems.Add(new InvoiceItem
             {
                 Id = Guid.NewGuid(),
-                FoodId = item.FoodID, // SỬA FoodId thành FoodID theo model bạn gửi
+                FoodId = item.FoodID,
                 ComboId = item.ComboID,
                 Quantity = item.Quantity,
                 UnitPrice = unitPrice
             });
         }
 
+        // Tạo hóa đơn mới
         var invoice = new Invoice
         {
             Id = Guid.NewGuid(),
@@ -92,15 +232,24 @@ public class InvoiceController : ControllerBase
             Items = invoiceItems
         };
 
+        // Thêm hóa đơn vào DB
         _context.Invoices.Add(invoice);
 
-        _context.CartItems.RemoveRange(cart.CartItems); // SỬA Ở ĐÂY
-        _context.Carts.Remove(cart);
+        // ✅ Xóa tất cả CartItem và Cart
+        _context.CartItems.RemoveRange(cart.CartItems);
+        cart.CartItems.Clear();
+        _context.Carts.Update(cart);
 
         await _context.SaveChangesAsync();
 
-        return Ok(new BaseResponse<Invoice> { Data = invoice });
+        return Ok(new BaseResponse<Invoice>
+        {
+            Message = "✅ Tạo hóa đơn thành công.",
+            Data = invoice
+        });
     }
+
+
 
 
     [HttpGet("{customerId}")]
@@ -114,6 +263,25 @@ public class InvoiceController : ControllerBase
 
         return Ok(new BaseResponse<List<Invoice>> { Data = invoices });
     }
+
+    //[HttpGet("detail/{invoiceId}")]
+    //public async Task<IActionResult> GetInvoiceDetail(Guid invoiceId)
+    //{
+    //    var invoice = await _context.Invoices
+    //        .Include(i => i.Items)
+    //        .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+    //    if (invoice == null)
+    //    {
+    //        return NotFound(new BaseResponse<string>
+    //        {
+    //            ErrorCode = 404,
+    //            Message = "Không tìm thấy hóa đơn."
+    //        });
+    //    }
+
+    //    return Ok(new BaseResponse<Invoice> { Data = invoice });
+    //}
 
     [HttpGet("detail/{invoiceId}")]
     public async Task<IActionResult> GetInvoiceDetail(Guid invoiceId)
@@ -131,8 +299,40 @@ public class InvoiceController : ControllerBase
             });
         }
 
-        return Ok(new BaseResponse<Invoice> { Data = invoice });
+        // Lấy danh sách Food và Combo từ DB (nếu cần thiết)
+        var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
+        var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
+
+        var invoiceDto = new InvoiceResponseDTO
+        {
+            Id = invoice.Id,
+            CreatedDate = invoice.CreatedDate,
+            Status = invoice.Status,
+            TotalAmount = invoice.TotalAmount,
+            Items = invoice.Items.Select(item => new InvoiceItemDTO
+            {
+                FoodId = item.FoodId,
+                FoodName = item.FoodId != null && foodDict.ContainsKey(item.FoodId.Value)
+                            ? foodDict[item.FoodId.Value]
+                            : null,
+                ComboId = item.ComboId,
+                ComboName = item.ComboId != null && comboDict.ContainsKey(item.ComboId.Value)
+                            ? comboDict[item.ComboId.Value]
+                            : null,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice
+            }).ToList()
+        };
+
+        return Ok(new BaseResponse<InvoiceResponseDTO>
+        {
+            Data = invoiceDto
+        });
     }
+
+
+
+
 
     [HttpPut("update-status/{invoiceId}")]
     public async Task<IActionResult> UpdateInvoiceStatus(
@@ -183,6 +383,80 @@ public class InvoiceController : ControllerBase
 
 
 
+    //[HttpPost("process-payment/{invoiceId}")]
+    //public async Task<IActionResult> ProcessPayment(Guid invoiceId, [FromQuery] string paymentMethod)
+    //{
+    //    var invoice = await _context.Invoices
+    //        .Include(i => i.Items)
+    //        .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+    //    if (invoice == null)
+    //    {
+    //        return NotFound(new BaseResponse<string>
+    //        {
+    //            ErrorCode = 404,
+    //            Message = "❌ Không tìm thấy hóa đơn."
+    //        });
+    //    }
+
+    //    var invoiceSummary = new InvoiceResponseDTO
+    //    {
+    //        Id = invoice.Id,
+    //        CreatedDate = invoice.CreatedDate,
+    //        TotalAmount = invoice.TotalAmount,
+    //        Status = invoice.Status,
+    //        Items = invoice.Items.Select(i => new InvoiceItemDTO
+    //        {
+    //            FoodId = i.FoodId,
+    //            ComboId = i.ComboId,
+    //            Quantity = i.Quantity,
+    //            UnitPrice = i.UnitPrice
+    //        }).ToList()
+    //    };
+
+    //    string paymentRedirectUrl = "";
+    //    switch (paymentMethod)
+    //    {
+    //        case "MoMo":
+    //            paymentRedirectUrl = $"https://momo.vn/checkout?invoiceId={invoice.Id}";
+    //            break;
+    //            // thêm vô nếu muốn UwU
+    //        //case "VNPay":
+    //        //    paymentRedirectUrl = $"https://vnpay.vn/checkout?invoiceId={invoice.Id}";
+    //        //    break;
+    //        case "COD":
+    //            invoice.Status = "Paid";
+    //            invoice.UpdatedDate = DateTime.Now;
+    //            invoice.UpdatedBy = "system";
+    //            _context.Invoices.Update(invoice);
+    //            await _context.SaveChangesAsync();
+
+    //            return Ok(new BaseResponse<InvoiceResponseDTO>
+    //            {
+    //                Message = "Thanh toán COD thành công.",
+    //                Data = invoiceSummary
+    //            });
+
+    //        default:
+    //            return BadRequest(new BaseResponse<string>
+    //            {
+    //                ErrorCode = 400,
+    //                Message = "Phương thức thanh toán không hợp lệ. Vui lòng chọn: MoMo hoặc COD."
+    //            });
+    //    }
+
+    //    return Ok(new BaseResponse<object>
+    //    {
+    //        Message = "Chuyển hướng đến cổng thanh toán.",
+    //        Data = new
+    //        {
+    //            Invoice = invoiceSummary,
+    //            PaymentRedirectUrl = paymentRedirectUrl
+    //        }
+    //    });
+    //}
+
+
     [HttpPost("process-payment/{invoiceId}")]
     public async Task<IActionResult> ProcessPayment(Guid invoiceId, [FromQuery] string paymentMethod)
     {
@@ -199,6 +473,22 @@ public class InvoiceController : ControllerBase
             });
         }
 
+        if (paymentMethod != "COD")
+        {
+            return BadRequest(new BaseResponse<string>
+            {
+                ErrorCode = 400,
+                Message = "❌ Phương thức thanh toán không hợp lệ. Chỉ hỗ trợ COD."
+            });
+        }
+
+        // Xử lý thanh toán COD
+        invoice.Status = "Paid";
+        invoice.UpdatedDate = DateTime.Now;
+        invoice.UpdatedBy = "system";
+        _context.Invoices.Update(invoice);
+        await _context.SaveChangesAsync();
+
         var invoiceSummary = new InvoiceResponseDTO
         {
             Id = invoice.Id,
@@ -214,46 +504,86 @@ public class InvoiceController : ControllerBase
             }).ToList()
         };
 
-        string paymentRedirectUrl = "";
-        switch (paymentMethod)
+        return Ok(new BaseResponse<InvoiceResponseDTO>
         {
-            case "MoMo":
-                paymentRedirectUrl = $"https://momo.vn/checkout?invoiceId={invoice.Id}";
-                break;
-                // thêm vô nếu muốn UwU
-            //case "VNPay":
-            //    paymentRedirectUrl = $"https://vnpay.vn/checkout?invoiceId={invoice.Id}";
-            //    break;
-            case "COD":
-                invoice.Status = "Paid";
-                invoice.UpdatedDate = DateTime.Now;
-                invoice.UpdatedBy = "system";
-                _context.Invoices.Update(invoice);
-                await _context.SaveChangesAsync();
+            Message = "✅ Thanh toán COD thành công.",
+            Data = invoiceSummary
+        });
+    }
 
-                return Ok(new BaseResponse<InvoiceResponseDTO>
-                {
-                    Message = "Thanh toán COD thành công.",
-                    Data = invoiceSummary
-                });
 
-            default:
-                return BadRequest(new BaseResponse<string>
-                {
-                    ErrorCode = 400,
-                    Message = "Phương thức thanh toán không hợp lệ. Vui lòng chọn: MoMo hoặc COD."
-                });
+    [HttpGet("my-cart")]
+    [Authorize] // Đảm bảo người dùng đã đăng nhập
+    public async Task<IActionResult> GetMyCart()
+    {
+        // Lấy userId từ JWT claims
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetUserId(); // Lấy userId từ token
+
+        if (userId == "" || userId == null)
+        {
+            return Unauthorized(new { message = "Người dùng chưa đăng nhập." });
         }
 
-        return Ok(new BaseResponse<object>
-        {
-            Message = "Chuyển hướng đến cổng thanh toán.",
-            Data = new
+        //if (string.IsNullOrEmpty(userId))
+        //    return Unauthorized(new { Message = "Không thể xác định người dùng." });
+
+        // Lấy thông tin người dùng
+        var user = await _userManager.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new
             {
-                Invoice = invoiceSummary,
-                PaymentRedirectUrl = paymentRedirectUrl
+                u.Id,
+                u.UserName,
+                u.Email,
+                u.FirstName,
+                u.LastName,
+                u.Address,
+                u.PhoneNumbers,
+                u.ProfileImage,
+                u.IsEmployee,
+                u.IsActive
+            })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+            return NotFound(new { Message = "Không tìm thấy người dùng." });
+
+        // Lấy giỏ hàng + sản phẩm trong giỏ
+        var cart = await _context.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+
+        if (cart == null)
+            return Ok(new
+            {
+                User = user,
+                Cart = new { Message = "Giỏ hàng trống." }
+            });
+
+        return Ok(new
+        {
+            User = user,
+            Cart = new
+            {
+                cart.CartId,
+                cart.CreatedDate,
+                Items = cart.CartItems.Select(item => new
+                {
+                    item.CartItemId,
+                    item.ProductName,
+                    item.Quantity,
+                    item.Price,
+                    item.Total,
+                    item.FoodID,
+                    item.ComboID
+                }),
+                TotalQuantity = cart.CartItems.Sum(item => item.Quantity),
+                TotalAmount = cart.CartItems.Sum(item => item.Quantity * item.Price)
+
             }
         });
     }
+
 
 }
