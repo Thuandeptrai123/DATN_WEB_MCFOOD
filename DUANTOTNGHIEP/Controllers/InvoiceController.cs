@@ -629,4 +629,25 @@ public class InvoiceController : ControllerBase
         });
     }
 
+    [HttpGet("statistics/revenue-by-month")]
+    public async Task<IActionResult> GetMonthlyRevenueStats()
+    {
+        var revenueStats = await _context.InvoiceHistories
+            .Where(h => h.Status == "Paid")
+            .Join(_context.Invoices,
+                  history => history.InvoiceId,
+                  invoice => invoice.Id,
+                  (history, invoice) => new { history, invoice })
+            .GroupBy(x => new { x.history.UpdatedAt.Year, x.history.UpdatedAt.Month })
+            .Select(g => new
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                TotalRevenue = g.Sum(x => x.invoice.TotalAmount)
+            })
+            .OrderBy(g => g.Year).ThenBy(g => g.Month)
+            .ToListAsync();
+
+        return Ok(new { ErrorCode = 0, Message = (string)null, Data = revenueStats });
+    }
 }
