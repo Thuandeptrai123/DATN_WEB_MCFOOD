@@ -8,6 +8,8 @@
         public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
 
+        public int? CookableQuantity { get; set; }
+
         public Guid FoodTypeId { get; set; }
         public FoodType FoodType { get; set; }
 
