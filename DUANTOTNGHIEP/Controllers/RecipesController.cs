@@ -230,5 +230,29 @@ namespace DUANTOTNGHIEP.Controllers
                 Message = "Cập nhật số lượng nguyên liệu thành công!"
             });
         }
+
+        // DELETE: api/recipes/food/{foodId}/ingredient/{ingredientId}
+        [HttpDelete("food/{foodId}/ingredient/{ingredientId}")]
+        public async Task<IActionResult> DeleteIngredientFromRecipe(Guid foodId, Guid ingredientId)
+        {
+            var recipe = await _context.Recipes.FirstOrDefaultAsync(r =>
+                r.FoodId == foodId && r.IngredientId == ingredientId);
+
+            if (recipe == null)
+                return NotFound(new BaseResponse<object>
+                {
+                    ErrorCode = 404,
+                    Message = "Không tìm thấy nguyên liệu trong công thức!"
+                });
+
+            _context.Recipes.Remove(recipe);
+            await _context.SaveChangesAsync();
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Xóa nguyên liệu khỏi công thức thành công!"
+            });
+        }
     }
 }

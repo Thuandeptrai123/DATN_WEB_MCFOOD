@@ -36,7 +36,8 @@ namespace DUANTOTNGHIEP.Controllers
                     Price = f.Price,
                     ImageUrl = f.ImageUrl,
                     FoodTypeId = f.FoodTypeId,
-                    FoodTypeName = f.FoodType.FoodTypeName
+                    FoodTypeName = f.FoodType.FoodTypeName,
+                    CookableQuantity = f.CookableQuantity ?? 0
                 }).ToListAsync();
 
             return Ok(new BaseResponse<List<FoodDto>>
@@ -251,6 +252,52 @@ namespace DUANTOTNGHIEP.Controllers
                     FoodName = food.Name,
                     MaxCookablePortions = maxPortions
                 }
+            });
+        }
+
+        // GET: api/foods/update-cookable-quantities
+        [HttpGet("update-cookable-quantities")]
+        public async Task<IActionResult> UpdateAllCookableQuantities()
+        {
+            var foods = await _context.Foods
+                .Include(f => f.Recipes)
+                    .ThenInclude(r => r.Ingredient)
+                .ToListAsync();
+
+            foreach (var food in foods)
+            {
+                if (food.Recipes == null || !food.Recipes.Any())
+                {
+                    food.CookableQuantity = 0;
+                    continue;
+                }
+
+                int maxPortions = int.MaxValue;
+
+                foreach (var recipe in food.Recipes)
+                {
+                    var available = recipe.Ingredient?.QuantityInStock ?? 0;
+                    var required = recipe.QuantityRequired;
+
+                    if (required == 0)
+                        continue;
+
+                    int possible = (int)(available / required);
+                    maxPortions = Math.Min(maxPortions, possible);
+                }
+
+                food.CookableQuantity = maxPortions == int.MaxValue ? 0 : maxPortions;
+                food.UpdatedBy = "System";
+                food.UpdatedDate = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = "Đã cập nhật số lượng có thể nấu cho tất cả món ăn!",
+                Data = null
             });
         }
     }
