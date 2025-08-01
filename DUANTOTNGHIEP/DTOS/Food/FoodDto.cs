@@ -9,6 +9,7 @@
         public string? ImageUrl { get; set; }
 
         public int CookableQuantity { get; set; }
+        public int CookedQuantity { get; set; }
 
         public Guid FoodTypeId { get; set; }
         public string FoodTypeName { get; set; }
