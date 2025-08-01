@@ -186,7 +186,6 @@ public class InvoiceController : ControllerBase
     [HttpPost("create")]
     public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
     {
-        // Lấy giỏ hàng theo UserId (từ dto.CustomerId)
         var cart = await _context.Carts
             .Include(c => c.CartItems)
             .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId);
@@ -200,14 +199,27 @@ public class InvoiceController : ControllerBase
             });
         }
 
-        // Tính tổng và tạo danh sách InvoiceItem
         decimal total = 0;
         var invoiceItems = new List<InvoiceItem>();
 
+        // Check và trừ số lượng CookedQuantity
         foreach (var item in cart.CartItems)
         {
-            decimal unitPrice = item.Price;
-            total += unitPrice * item.Quantity;
+            if (item.FoodID.HasValue)
+            {
+                var food = await _context.Foods.FindAsync(item.FoodID.Value);
+                if (food == null)
+                    return BadRequest(new { message = "Món ăn không tồn tại!" });
+
+                if (food.CookedQuantity < item.Quantity)
+                {
+                    return BadRequest(new { message = $"Không đủ món đã nấu cho: {food.Name}" });
+                }
+
+                food.CookedQuantity -= item.Quantity;
+            }
+
+            total += item.Price * item.Quantity;
 
             invoiceItems.Add(new InvoiceItem
             {
@@ -215,11 +227,10 @@ public class InvoiceController : ControllerBase
                 FoodId = item.FoodID,
                 ComboId = item.ComboID,
                 Quantity = item.Quantity,
-                UnitPrice = unitPrice
+                UnitPrice = item.Price
             });
         }
 
-        // Tạo hóa đơn mới
         var invoice = new Invoice
         {
             Id = Guid.NewGuid(),
@@ -233,10 +244,9 @@ public class InvoiceController : ControllerBase
             Items = invoiceItems
         };
 
-        // Thêm hóa đơn vào DB
         _context.Invoices.Add(invoice);
 
-        // ✅ Xóa tất cả CartItem và Cart
+        // Xóa giỏ hàng
         _context.CartItems.RemoveRange(cart.CartItems);
         cart.CartItems.Clear();
         _context.Carts.Update(cart);
@@ -249,6 +259,7 @@ public class InvoiceController : ControllerBase
             Data = invoice
         });
     }
+
 
 
 

@@ -12,7 +12,7 @@
 
         public Guid FoodTypeId { get; set; }
         public FoodType FoodType { get; set; }
-
+        public int CookedQuantity { get; set; } = 0; // Số lượng đã được nấu sẵn, có thể đặt hàng
         public ICollection<Recipe> Recipes { get; set; }
     }
 

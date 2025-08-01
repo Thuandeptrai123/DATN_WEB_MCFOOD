@@ -1,4 +1,4 @@
-﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Food;
 using DUANTOTNGHIEP.Models;
@@ -37,7 +37,8 @@ namespace DUANTOTNGHIEP.Controllers
                     ImageUrl = f.ImageUrl,
                     FoodTypeId = f.FoodTypeId,
                     FoodTypeName = f.FoodType.FoodTypeName,
-                    CookableQuantity = f.CookableQuantity ?? 0
+                    CookableQuantity = f.CookableQuantity ?? 0,
+                    CookedQuantity = f.CookedQuantity
                 }).ToListAsync();
 
             return Ok(new BaseResponse<List<FoodDto>>
@@ -71,7 +72,9 @@ namespace DUANTOTNGHIEP.Controllers
                 Price = food.Price,
                 ImageUrl = food.ImageUrl,
                 FoodTypeId = food.FoodTypeId,
-                FoodTypeName = food.FoodType.FoodTypeName
+                FoodTypeName = food.FoodType.FoodTypeName,
+                CookableQuantity = food.CookableQuantity ?? 0,
+                CookedQuantity = food.CookedQuantity
             };
 
             return Ok(new BaseResponse<FoodDto>
@@ -117,6 +120,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Price = dto.Price,
                 ImageUrl = imageUrl,
                 FoodTypeId = dto.FoodTypeId,
+                CookedQuantity = 0,
                 CreatedBy = "System",
                 UpdatedBy = "System",
                 CreatedDate = DateTime.UtcNow,
@@ -300,6 +304,85 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = null
             });
         }
+
+        // POST: api/foods/cook/{foodId}
+        [HttpPost("cook/{foodId}")]
+        public async Task<IActionResult> CookFood(Guid foodId, [FromQuery] int quantity)
+        {
+            var food = await _context.Foods
+                .Include(f => f.Recipes)
+                .ThenInclude(r => r.Ingredient)
+                .FirstOrDefaultAsync(f => f.Id == foodId);
+
+            if (food == null)
+                return NotFound(new BaseResponse<object> { ErrorCode = 404, Message = "Món ăn không tồn tại!" });
+
+            if (food.Recipes == null || !food.Recipes.Any())
+                return BadRequest(new BaseResponse<object> { ErrorCode = 400, Message = "Món ăn chưa có công thức!" });
+
+            // Kiểm tra đủ nguyên liệu không
+            foreach (var recipe in food.Recipes)
+            {
+                var available = recipe.Ingredient?.QuantityInStock ?? 0;
+                var required = recipe.QuantityRequired * quantity;
+
+                if (available < required)
+                {
+                    return BadRequest(new BaseResponse<object>
+                    {
+                        ErrorCode = 400,
+                        Message = $"Không đủ nguyên liệu: {recipe.Ingredient.Name}"
+                    });
+                }
+            }
+
+            // Trừ nguyên liệu và tăng số lượng đã nấu
+            foreach (var recipe in food.Recipes)
+            {
+                recipe.Ingredient.QuantityInStock -= recipe.QuantityRequired * quantity;
+            }
+
+            food.CookedQuantity += quantity;
+            food.UpdatedBy = "System";
+            food.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new BaseResponse<object>
+            {
+                ErrorCode = 200,
+                Message = $"Đã nấu {quantity} phần {food.Name} thành công!",
+                Data = new { food.Id, food.CookedQuantity }
+            });
+        }
+
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailableFoods()
+        {
+            var foods = await _context.Foods
+                .Include(f => f.FoodType)
+                .Where(f => f.CookedQuantity > 0)
+                .Select(f => new FoodDto
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Description = f.Description,
+                    Price = f.Price,
+                    CookedQuantity = f.CookedQuantity,
+                    ImageUrl = f.ImageUrl,
+                    FoodTypeId = f.FoodTypeId,
+                    FoodTypeName = f.FoodType.FoodTypeName,
+                    CookableQuantity = f.CookableQuantity ?? 0
+                })
+                .ToListAsync();
+
+            return Ok(new BaseResponse<List<FoodDto>>
+            {
+                ErrorCode = 200,
+                Message = "Lấy danh sách món có thể đặt hàng!",
+                Data = foods
+            });
+        }
         // GET: api/foods/bytype/{foodTypeId}
         [HttpGet("bytype/{foodTypeId}")]
         public async Task<IActionResult> GetByFoodType(Guid foodTypeId)
@@ -327,6 +410,5 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = foods
             });
         }
-
     }
 }
