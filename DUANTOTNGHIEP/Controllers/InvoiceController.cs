@@ -2,6 +2,7 @@
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Invoice;
 using DUANTOTNGHIEP.Models;
+using DUANTOTNGHIEP.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -649,5 +650,233 @@ public class InvoiceController : ControllerBase
             .ToListAsync();
 
         return Ok(new { ErrorCode = 0, Message = (string)null, Data = revenueStats });
+    }
+
+    [HttpGet("export-pdf/{invoiceId}")]
+    public async Task<IActionResult> ExportInvoicePdf(Guid invoiceId, [FromServices] InvoicePdfService pdfService)
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.Items)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+        if (invoice == null)
+            return NotFound(new BaseResponse<string> { ErrorCode = 404, Message = "Không tìm thấy hóa đơn." });
+
+        var customer = await _context.Users.FirstOrDefaultAsync(u => u.Id == invoice.CustomerId);
+        if (customer == null)
+            return NotFound(new BaseResponse<string> { ErrorCode = 404, Message = "Không tìm thấy khách hàng." });
+
+        // Lấy tên món ăn/combo
+        var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
+        var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
+
+        var items = invoice.Items.Select(i =>
+        {
+            var name = i.FoodId != null && foodDict.ContainsKey(i.FoodId.Value)
+                ? foodDict[i.FoodId.Value]
+                : i.ComboId != null && comboDict.ContainsKey(i.ComboId.Value)
+                    ? comboDict[i.ComboId.Value]
+                    : "Không xác định";
+            return (name, i.Quantity, i.UnitPrice);
+        }).ToList();
+
+        // Sinh file PDF
+        var fileUrl = pdfService.GeneratePdf(invoice, customer, items);
+
+        return Ok(new BaseResponse<string>
+        {
+            Message = "✅ Xuất hóa đơn thành công.",
+            Data = fileUrl
+        });
+    }
+    [Authorize]
+    [HttpGet("recommendation/latest")]
+    public async Task<IActionResult> GetLastInvoiceRecommendations()
+    {
+        try
+        {
+            var userId = GetUserId(); // Lấy user từ token
+
+            var lastInvoice = await _context.Invoices
+                .Where(i => i.CustomerId == userId)
+                .OrderByDescending(i => i.CreatedDate)
+                .Include(i => i.Items)
+                .FirstOrDefaultAsync();
+
+            if (lastInvoice == null || lastInvoice.Items == null || !lastInvoice.Items.Any())
+            {
+                return Ok(new BaseResponse<List<object>>
+                {
+                    Message = "Không tìm thấy hóa đơn gần đây.",
+                    Data = new List<object>()
+                });
+            }
+
+            // Lấy tên món ăn và combo từ DB
+            var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
+            var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
+
+            var recommendations = lastInvoice.Items.Select(item => (object)new
+            {
+                FoodId = item.FoodId,
+                FoodName = item.FoodId != null && foodDict.ContainsKey(item.FoodId.Value)
+                    ? foodDict[item.FoodId.Value]
+                    : null,
+                ComboId = item.ComboId,
+                            ComboName = item.ComboId != null && comboDict.ContainsKey(item.ComboId.Value)
+                    ? comboDict[item.ComboId.Value]
+                    : null,
+                Quantity = item.Quantity
+            }).ToList();
+
+
+            return Ok(new BaseResponse<List<object>>
+            {
+                Message = "Gợi ý dựa trên hóa đơn gần nhất.",
+                Data = recommendations
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new BaseResponse<string>
+            {
+                ErrorCode = 500,
+                Message = "❌ Lỗi server khi lấy gợi ý: " + ex.Message
+            });
+        }
+    }
+    [Authorize]
+    [HttpGet("recommendation/favorite")]
+    public async Task<IActionResult> GetFavoriteFoods()
+    {
+        try
+        {
+            var userId = GetUserId(); // Lấy user từ token
+
+            // Lấy tất cả hóa đơn và item đã đặt của user
+            var invoiceItems = await _context.Invoices
+                .Where(i => i.CustomerId == userId)
+                .SelectMany(i => i.Items)
+                .ToListAsync();
+
+            if (!invoiceItems.Any())
+            {
+                return Ok(new BaseResponse<List<object>>
+                {
+                    Message = "Chưa có dữ liệu để gợi ý.",
+                    Data = new List<object>()
+                });
+            }
+
+            // Gom nhóm theo món ăn hoặc combo
+            var groupedItems = invoiceItems
+                .GroupBy(item => new { item.FoodId, item.ComboId })
+                .Select(g => new
+                {
+                    g.Key.FoodId,
+                    g.Key.ComboId,
+                    Quantity = g.Sum(x => x.Quantity)
+                })
+                .OrderByDescending(x => x.Quantity)
+                .ToList();
+
+            // Lấy tên món ăn / combo
+            var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
+            var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
+
+            var recommendations = groupedItems.Select(item => (object)new
+            {
+                FoodId = item.FoodId,
+                FoodName = item.FoodId != null && foodDict.ContainsKey(item.FoodId.Value)
+                    ? foodDict[item.FoodId.Value]
+                    : null,
+                ComboId = item.ComboId,
+                ComboName = item.ComboId != null && comboDict.ContainsKey(item.ComboId.Value)
+                    ? comboDict[item.ComboId.Value]
+                    : null,
+                TotalOrdered = item.Quantity
+            }).ToList();
+
+            return Ok(new BaseResponse<List<object>>
+            {
+                Message = "Gợi ý dựa trên món ăn đã đặt nhiều nhất.",
+                Data = recommendations
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new BaseResponse<string>
+            {
+                ErrorCode = 500,
+                Message = "❌ Lỗi server khi lấy gợi ý món ăn phổ biến: " + ex.Message
+            });
+        }
+    }
+    [HttpGet("recommendation/popular")]
+    public async Task<IActionResult> GetMostPopularFoods()
+    {
+        try
+        {
+            var invoiceItems = await _context.Invoices
+                .SelectMany(i => i.Items.Select(item => new
+                {
+                    i.CustomerId,
+                    item.FoodId,
+                    item.ComboId
+                }))
+                .ToListAsync();
+
+            if (!invoiceItems.Any())
+            {
+                return Ok(new BaseResponse<List<object>>
+                {
+                    Message = "Chưa có dữ liệu đặt món để thống kê.",
+                    Data = new List<object>()
+                });
+            }
+
+            // Gom nhóm theo món ăn hoặc combo và đếm số khách hàng khác nhau
+            var grouped = invoiceItems
+                .GroupBy(x => new { x.FoodId, x.ComboId })
+                .Select(g => new
+                {
+                    g.Key.FoodId,
+                    g.Key.ComboId,
+                    CustomerCount = g.Select(x => x.CustomerId).Distinct().Count()
+                })
+                .OrderByDescending(g => g.CustomerCount)
+                .ToList();
+
+            // Lấy tên món ăn / combo
+            var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
+            var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
+
+            var result = grouped.Select(item => (object)new
+            {
+                FoodId = item.FoodId,
+                FoodName = item.FoodId != null && foodDict.ContainsKey(item.FoodId.Value)
+                    ? foodDict[item.FoodId.Value]
+                    : null,
+                ComboId = item.ComboId,
+                ComboName = item.ComboId != null && comboDict.ContainsKey(item.ComboId.Value)
+                    ? comboDict[item.ComboId.Value]
+                    : null,
+                TotalCustomers = item.CustomerCount
+            }).ToList();
+
+            return Ok(new BaseResponse<List<object>>
+            {
+                Message = "Danh sách món ăn/combo được nhiều khách hàng đặt nhất.",
+                Data = result
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new BaseResponse<string>
+            {
+                ErrorCode = 500,
+                Message = "❌ Lỗi khi truy vấn dữ liệu phổ biến: " + ex.Message
+            });
+        }
     }
 }

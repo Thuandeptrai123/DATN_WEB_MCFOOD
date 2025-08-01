@@ -1,10 +1,13 @@
 ﻿using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.DTOS;
 using DUANTOTNGHIEP.Models;
+using DUANTOTNGHIEP.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Serialization;
+using QuestPDF.Infrastructure;
+
 
 namespace DUANTOTNGHIEP
 {
@@ -13,7 +16,10 @@ namespace DUANTOTNGHIEP
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            
+
+            QuestPDF.Settings.License = LicenseType.Community;
+
+
             // Add services to the container.
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -80,6 +86,7 @@ namespace DUANTOTNGHIEP
             builder.Services.AddSwaggerGen();
             builder.Services.AddSwaggerGenNewtonsoftSupport(); // 👈 THÊM DÒNG NÀY
             builder.Services.AddScoped<IEmailSender, EmailSender>();
+            builder.Services.AddScoped<InvoicePdfService>();
 
             // 1. Add CORS
             builder.Services.AddCors(options =>

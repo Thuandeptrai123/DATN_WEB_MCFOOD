@@ -18,7 +18,7 @@ namespace DUANTOTNGHIEP.Controllers
         {
             _context = context;
         }
-        [Authorize(Roles = "ADMIN")]
+        
 
         [HttpGet]
         public async Task<ActionResult<BaseResponse<IEnumerable<FoodType_DTO>>>> GetFoodTypes()
@@ -43,6 +43,8 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = foodTypes
             });
         }
+
+        [Authorize(Roles = "ADMIN")]
 
         [HttpGet("{id}")]
         public async Task<ActionResult<BaseResponse<FoodType_DTO>>> GetFoodType(Guid id)
