@@ -1,4 +1,4 @@
-﻿using DUANTOTNGHIEP.Data;
+using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Food;
 using DUANTOTNGHIEP.Models;
@@ -383,6 +383,32 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = foods
             });
         }
+        // GET: api/foods/bytype/{foodTypeId}
+        [HttpGet("bytype/{foodTypeId}")]
+        public async Task<IActionResult> GetByFoodType(Guid foodTypeId)
+        {
+            var foods = await _context.Foods
+                .Include(f => f.FoodType)
+                .Where(f => f.FoodTypeId == foodTypeId)
+                .Select(f => new FoodDto
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Description = f.Description,
+                    Price = f.Price,
+                    ImageUrl = f.ImageUrl,
+                    FoodTypeId = f.FoodTypeId,
+                    FoodTypeName = f.FoodType.FoodTypeName,
+                    CookableQuantity = f.CookableQuantity ?? 0
+                })
+                .ToListAsync();
 
+            return Ok(new BaseResponse<List<FoodDto>>
+            {
+                ErrorCode = 200,
+                Message = "Lấy món ăn theo loại thành công!",
+                Data = foods
+            });
+        }
     }
 }
