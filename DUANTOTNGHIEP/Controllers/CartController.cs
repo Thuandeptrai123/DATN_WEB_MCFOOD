@@ -175,6 +175,10 @@ namespace DUANTOTNGHIEP.Controllers
                     var food = await _context.Foods.FindAsync(request.FoodID.Value);
                     if (food == null) return NotFound("Món ăn không tồn tại.");
 
+                    // ✅ Kiểm tra xem CookedQuantity > 0 hay không
+                    if (food.CookedQuantity <= 0)
+                        return BadRequest($"Món ăn '{food.Name}' hiện không còn sẵn sàng để đặt.");
+
                     var existingFoodItem = await _context.CartItems.FirstOrDefaultAsync(ci =>
                         ci.CartId == cart.CartId && ci.FoodID == request.FoodID && ci.ComboID == null);
 
@@ -199,6 +203,7 @@ namespace DUANTOTNGHIEP.Controllers
                         addedItems.Add(new { product = "food", item = existingFoodItem });
                     }
                 }
+
 
                 // Nếu có ComboID
                 if (request.ComboID.HasValue)
