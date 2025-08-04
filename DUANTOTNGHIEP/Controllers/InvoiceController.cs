@@ -260,6 +260,73 @@ public class InvoiceController : ControllerBase
         });
     }
 
+    //[HttpPost("create")]
+    //public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDTO dto)
+    //{
+    //    // Lấy giỏ hàng theo UserId (từ dto.CustomerId)
+    //    var cart = await _context.Carts
+    //        .Include(c => c.CartItems)
+    //        .FirstOrDefaultAsync(c => c.UserId == dto.CustomerId);
+
+    //    if (cart == null || cart.CartItems.Count == 0)
+    //    {
+    //        return BadRequest(new BaseResponse<string>
+    //        {
+    //            ErrorCode = 400,
+    //            Message = "❌ Giỏ hàng rỗng hoặc không tồn tại."
+    //        });
+    //    }
+
+    //    // Tính tổng và tạo danh sách InvoiceItem
+    //    decimal total = 0;
+    //    var invoiceItems = new List<InvoiceItem>();
+
+    //    foreach (var item in cart.CartItems)
+    //    {
+    //        decimal unitPrice = item.Price;
+    //        total += unitPrice * item.Quantity;
+
+    //        invoiceItems.Add(new InvoiceItem
+    //        {
+    //            Id = Guid.NewGuid(),
+    //            FoodId = item.FoodID,
+    //            ComboId = item.ComboID,
+    //            Quantity = item.Quantity,
+    //            UnitPrice = unitPrice
+    //        });
+    //    }
+
+    //    // Tạo hóa đơn mới
+    //    var invoice = new Invoice
+    //    {
+    //        Id = Guid.NewGuid(),
+    //        CustomerId = dto.CustomerId,
+    //        CreatedDate = DateTime.Now,
+    //        CreatedBy = "system",
+    //        UpdatedDate = DateTime.Now,
+    //        UpdatedBy = "system",
+    //        Status = "Pending",
+    //        TotalAmount = total,
+    //        Items = invoiceItems
+    //    };
+
+    //    // Thêm hóa đơn vào DB
+    //    _context.Invoices.Add(invoice);
+
+    //    // ✅ Xóa tất cả CartItem và Cart
+    //    _context.CartItems.RemoveRange(cart.CartItems);
+    //    cart.CartItems.Clear();
+    //    _context.Carts.Update(cart);
+
+    //    await _context.SaveChangesAsync();
+
+    //    return Ok(new BaseResponse<Invoice>
+    //    {
+    //        Message = "✅ Tạo hóa đơn thành công.",
+    //        Data = invoice
+    //    });
+    //}
+
 
 
 
@@ -700,25 +767,88 @@ public class InvoiceController : ControllerBase
             Data = fileUrl
         });
     }
+    //[Authorize]
+    //[HttpGet("recommendation/latest")]
+    //public async Task<IActionResult> GetLastInvoiceRecommendations()
+    //{
+    //    try
+    //    {
+    //        var userId = GetUserId(); // Lấy user từ token
+
+    //        var lastInvoice = await _context.Invoices
+    //            .Where(i => i.CustomerId == userId)
+    //            .OrderByDescending(i => i.CreatedDate)
+    //            .Include(i => i.Items)
+    //            .FirstOrDefaultAsync();
+
+    //        if (lastInvoice == null || lastInvoice.Items == null || !lastInvoice.Items.Any())
+    //        {
+    //            return Ok(new BaseResponse<List<object>>
+    //            {
+    //                Message = "Không tìm thấy hóa đơn gần đây.",
+    //                Data = new List<object>()
+    //            });
+    //        }
+
+    //        // Lấy tên món ăn và combo từ DB
+    //        var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
+    //        var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
+
+    //        var recommendations = lastInvoice.Items.Select(item => (object)new
+    //        {
+    //            FoodId = item.FoodId,
+    //            FoodName = item.FoodId != null && foodDict.ContainsKey(item.FoodId.Value)
+    //                ? foodDict[item.FoodId.Value]
+    //                : null,
+    //            ComboId = item.ComboId,
+    //                        ComboName = item.ComboId != null && comboDict.ContainsKey(item.ComboId.Value)
+    //                ? comboDict[item.ComboId.Value]
+    //                : null,
+    //            Quantity = item.Quantity
+    //        }).ToList();
+
+
+    //        return Ok(new BaseResponse<List<object>>
+    //        {
+    //            Message = "Gợi ý dựa trên hóa đơn gần nhất.",
+    //            Data = recommendations
+    //        });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new BaseResponse<string>
+    //        {
+    //            ErrorCode = 500,
+    //            Message = "❌ Lỗi server khi lấy gợi ý: " + ex.Message
+    //        });
+    //    }
+    //}
     [Authorize]
     [HttpGet("recommendation/latest")]
-    public async Task<IActionResult> GetLastInvoiceRecommendations()
+    public async Task<IActionResult> GetLastInvoicesRecommendations()
     {
         try
         {
             var userId = GetUserId(); // Lấy user từ token
 
-            var lastInvoice = await _context.Invoices
+            // Lấy 5 hóa đơn gần nhất của người dùng
+            var lastInvoices = await _context.Invoices
                 .Where(i => i.CustomerId == userId)
                 .OrderByDescending(i => i.CreatedDate)
+                .Take(5)
                 .Include(i => i.Items)
-                .FirstOrDefaultAsync();
+                .ToListAsync();
 
-            if (lastInvoice == null || lastInvoice.Items == null || !lastInvoice.Items.Any())
+            var items = lastInvoices
+                .Where(i => i.Items != null)
+                .SelectMany(i => i.Items)
+                .ToList();
+
+            if (!items.Any())
             {
                 return Ok(new BaseResponse<List<object>>
                 {
-                    Message = "Không tìm thấy hóa đơn gần đây.",
+                    Message = "Không tìm thấy món ăn nào trong 5 hóa đơn gần nhất.",
                     Data = new List<object>()
                 });
             }
@@ -727,23 +857,27 @@ public class InvoiceController : ControllerBase
             var foodDict = await _context.Foods.ToDictionaryAsync(f => f.Id, f => f.Name);
             var comboDict = await _context.Combos.ToDictionaryAsync(c => c.Id, c => c.Name);
 
-            var recommendations = lastInvoice.Items.Select(item => (object)new
-            {
-                FoodId = item.FoodId,
-                FoodName = item.FoodId != null && foodDict.ContainsKey(item.FoodId.Value)
-                    ? foodDict[item.FoodId.Value]
-                    : null,
-                ComboId = item.ComboId,
-                            ComboName = item.ComboId != null && comboDict.ContainsKey(item.ComboId.Value)
-                    ? comboDict[item.ComboId.Value]
-                    : null,
-                Quantity = item.Quantity
-            }).ToList();
-
+            // Gom nhóm theo FoodId hoặc ComboId để tránh lặp
+            var recommendations = items
+                .GroupBy(item => new { item.FoodId, item.ComboId })
+                .Select(group => new
+                {
+                    FoodId = group.Key.FoodId,
+                    FoodName = group.Key.FoodId != null && foodDict.ContainsKey(group.Key.FoodId.Value)
+                        ? foodDict[group.Key.FoodId.Value]
+                        : null,
+                    ComboId = group.Key.ComboId,
+                    ComboName = group.Key.ComboId != null && comboDict.ContainsKey(group.Key.ComboId.Value)
+                        ? comboDict[group.Key.ComboId.Value]
+                        : null,
+                    TotalQuantity = group.Sum(i => i.Quantity)
+                })
+                .OrderByDescending(x => x.TotalQuantity)
+                .ToList<object>();
 
             return Ok(new BaseResponse<List<object>>
             {
-                Message = "Gợi ý dựa trên hóa đơn gần nhất.",
+                Message = "Gợi ý dựa trên 5 hóa đơn gần nhất.",
                 Data = recommendations
             });
         }
@@ -756,6 +890,7 @@ public class InvoiceController : ControllerBase
             });
         }
     }
+
     [Authorize]
     [HttpGet("recommendation/favorite")]
     public async Task<IActionResult> GetFavoriteFoods()
