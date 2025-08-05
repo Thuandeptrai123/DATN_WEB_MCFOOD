@@ -187,7 +187,7 @@ namespace DUANTOTNGHIEP.Controllers
                 // Tạo token xác nhận email
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var encodedToken = HttpUtility.UrlEncode(token);
-                var confirmUrl = $"{_config["FrontendUrl"]}confirm-email?userId={user.Id}&token={encodedToken}";
+                string confirmUrl = $"http://localhost:3000/api/User/ConfirmEmail?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
 
                 var emailMessage = $@"
             <h3>Chào {user.UserName},</h3>
