@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Security.Claims;
 
 [ApiController]
@@ -441,7 +442,6 @@ public class InvoiceController : ControllerBase
 
         _context.Invoices.Update(invoice);
 
-        // Ghi lại lịch sử thay đổi
         _context.InvoiceHistories.Add(new InvoiceHistory
         {
             Id = Guid.NewGuid(),
@@ -459,6 +459,36 @@ public class InvoiceController : ControllerBase
             Message = $"✅ Hóa đơn đã cập nhật từ '{oldStatus}' ➜ '{newStatus}' với hành động: {action}"
         });
     }
+
+    [HttpPut("update-date/{invoiceId}")]
+    public async Task<IActionResult> UpdateInvoiceDate(
+        Guid invoiceId,
+        [FromQuery] DateTime newDate,
+        [FromQuery] string updatedBy = "admin",
+        [FromQuery] string action = "Chỉnh ngày tạo"
+    )
+    {
+        var invoice = await _context.Invoices.FindAsync(invoiceId);
+        if (invoice == null) return NotFound();
+
+        invoice.CreatedDate = newDate;
+
+        // Ghi lại lịch sử cập nhật ngày (nếu cần)
+        _context.InvoiceHistories.Add(new InvoiceHistory
+        {
+            Id = Guid.NewGuid(),
+            InvoiceId = invoice.Id,
+            Status = invoice.Status, // trạng thái hiện tại
+            Action = action,
+            UpdatedBy = updatedBy,
+            UpdatedAt = newDate // ✅ quan trọng: dùng ngày mới để push thống kê
+        });
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "✅ Ngày tạo đã được cập nhật." });
+    }
+
 
 
 
