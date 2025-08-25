@@ -43,9 +43,6 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = foodTypes
             });
         }
-
-        [Authorize(Roles = "ADMIN")]
-
         [HttpGet("{id}")]
         public async Task<ActionResult<BaseResponse<FoodType_DTO>>> GetFoodType(Guid id)
         {
@@ -75,6 +72,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = dto
             });
         }
+        [Authorize(Roles = "ADMIN")]
 
         [HttpPost]
         public async Task<ActionResult<BaseResponse<FoodType_DTO>>> CreateFoodType(CreateFoodType_DTO request)
@@ -111,7 +109,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result
             });
         }
-
+        [Authorize(Roles = "ADMIN")]
         [HttpPut("{id}")]
         public async Task<ActionResult<BaseResponse<FoodType_DTO>>> UpdateFoodType(Guid id, UpdateFoodType_DTO request)
         {
@@ -150,7 +148,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = dto
             });
         }
-
+        [Authorize(Roles = "ADMIN")]
         [HttpDelete("{id}")]
         public async Task<ActionResult<BaseResponse<object>>> DeleteFoodType(Guid id)
         {

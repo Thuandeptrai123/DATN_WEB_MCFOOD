@@ -413,7 +413,7 @@ public class InvoiceController : ControllerBase
 
 
 
-
+    [Authorize(Roles = "ADMIN, STAFF")]
     [HttpPut("update-status/{invoiceId}")]
     public async Task<IActionResult> UpdateInvoiceStatus(
     Guid invoiceId,
@@ -693,7 +693,7 @@ public class InvoiceController : ControllerBase
             }
         });
     }
-
+    [Authorize(Roles = "ADMIN")]
     [HttpGet("statistics/invoices-by-month")]
     public async Task<IActionResult> GetMonthlyInvoiceCount()
     {
@@ -715,7 +715,7 @@ public class InvoiceController : ControllerBase
             Data = stats
         });
     }
-
+    [Authorize(Roles = "ADMIN")]
     [HttpGet("statistics/customers-by-month")]
     public async Task<IActionResult> GetMonthlyCustomerStats()
     {
@@ -737,7 +737,7 @@ public class InvoiceController : ControllerBase
             Data = stats
         });
     }
-
+    [Authorize(Roles = "ADMIN")]
     [HttpGet("statistics/revenue-by-month")]
     public async Task<IActionResult> GetMonthlyRevenueStats()
     {

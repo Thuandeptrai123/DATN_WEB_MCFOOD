@@ -2,6 +2,7 @@
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Ingredient;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -76,7 +77,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = dto
             });
         }
-
+        [Authorize(Roles = "ADMIN, STAFF")]
         // POST: api/ingredients
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateIngredientDto dto)
@@ -114,7 +115,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = new { ingredient.Id }
             });
         }
-
+        [Authorize(Roles = "ADMIN, STAFF")]
         // PUT: api/ingredients/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateIngredientDto dto)
@@ -142,7 +143,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Message = "Cập nhật nguyên liệu thành công!"
             });
         }
-
+        [Authorize(Roles = "ADMIN, STAFF")]
         // DELETE: api/ingredients/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)

@@ -2,6 +2,7 @@ using DUANTOTNGHIEP.Data;
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Food;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -86,6 +87,7 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         // POST: api/foods
+        [Authorize(Roles = "ADMIN")]
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CreateFoodDto dto)
         {
@@ -139,6 +141,7 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         // PUT: api/foods/{id}
+        [Authorize(Roles = "ADMIN, STAFF")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromForm] UpdateFoodDto dto)
         {
@@ -180,6 +183,7 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         // DELETE: api/foods/{id}
+        [Authorize(Roles = "ADMIN")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -200,7 +204,6 @@ namespace DUANTOTNGHIEP.Controllers
                 Message = "Xóa món ăn thành công!"
             });
         }
-
         // GET: api/foods/cookable-quantity/{foodId}
         [HttpGet("cookable-quantity/{foodId}")]
         public async Task<IActionResult> GetCookableQuantity(Guid foodId)
@@ -258,7 +261,6 @@ namespace DUANTOTNGHIEP.Controllers
                 }
             });
         }
-
         // GET: api/foods/update-cookable-quantities
         [HttpGet("update-cookable-quantities")]
         public async Task<IActionResult> UpdateAllCookableQuantities()
@@ -304,7 +306,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = null
             });
         }
-
+        [Authorize(Roles = "ADMIN, STAFF")]
         // POST: api/foods/cook/{foodId}
         [HttpPost("cook/{foodId}")]
         public async Task<IActionResult> CookFood(Guid foodId, [FromQuery] int quantity)

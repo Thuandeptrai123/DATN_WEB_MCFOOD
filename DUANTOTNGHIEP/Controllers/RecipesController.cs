@@ -2,6 +2,7 @@
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.DTOS.Recipe;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,6 @@ namespace DUANTOTNGHIEP.Controllers
         {
             _context = context;
         }
-
         // GET: api/recipes/food/{foodId}
         [HttpGet("food/{foodId}")]
         public async Task<IActionResult> GetByFoodId(Guid foodId)
@@ -60,6 +60,7 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         // POST: api/recipes
+        [Authorize(Roles = "ADMIN, STAFF")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateRecipeDto dto)
         {
@@ -106,6 +107,7 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         // PUT: api/recipes/{id}
+        [Authorize(Roles = "ADMIN, STAFF")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRecipeDto dto)
         {
@@ -130,6 +132,7 @@ namespace DUANTOTNGHIEP.Controllers
         }
 
         // DELETE: api/recipes/{id}
+        [Authorize(Roles = "ADMIN, STAFF")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -230,7 +233,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Message = "Cập nhật số lượng nguyên liệu thành công!"
             });
         }
-
+        [Authorize(Roles = "ADMIN, STAFF")]
         // DELETE: api/recipes/food/{foodId}/ingredient/{ingredientId}
         [HttpDelete("food/{foodId}/ingredient/{ingredientId}")]
         public async Task<IActionResult> DeleteIngredientFromRecipe(Guid foodId, Guid ingredientId)

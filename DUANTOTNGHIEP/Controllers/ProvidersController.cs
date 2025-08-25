@@ -2,6 +2,7 @@
 using DUANTOTNGHIEP.DTOS;
 using DUANTOTNGHIEP.DTOS.BaseResponses;
 using DUANTOTNGHIEP.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,7 +73,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result
             });
         }
-
+        [Authorize(Roles = "ADMIN")]
         [HttpPost]
         public async Task<IActionResult> Create(ProviderCreateDTO dto)
         {
@@ -106,7 +107,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result
             });
         }
-
+        [Authorize(Roles = "ADMIN")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, ProviderUpdateDTO dto)
         {
@@ -136,7 +137,7 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = provider.Id.ToString()
             });
         }
-
+        [Authorize(Roles = "ADMIN")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
