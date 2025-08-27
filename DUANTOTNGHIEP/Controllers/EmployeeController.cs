@@ -413,6 +413,49 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = result.Errors
             });
         }
+
+        [Authorize(Roles = "ADMIN")]
+        [HttpPut("restore_res")]
+        public async Task<IActionResult> RestoreUserRes([FromBody] string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse<string>
+                {
+                    ErrorCode = 404,
+                    Message = "Nhân viên không tồn tại",
+                    Data = null
+                });
+            }
+
+            var isStaff = await _userManager.IsInRoleAsync(user, "STAFF");
+            if (!isStaff)
+            {
+                return Forbid();
+            }
+
+            user.IsActive = true;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new BaseResponse<string>
+                {
+                    ErrorCode = 200,
+                    Message = "Khôi phục nhân viên thành công!",
+                    Data = user.Email // trả lại email cũng hợp lý
+                });
+            }
+
+            return BadRequest(new BaseResponse<object>
+            {
+                ErrorCode = 400,
+                Message = "Khôi phục thất bại",
+                Data = result.Errors
+            });
+        }
+
         [Authorize(Roles = "ADMIN")]
         [HttpPut("{id}/restore")]
         public async Task<IActionResult> RestoreUser(string id)
