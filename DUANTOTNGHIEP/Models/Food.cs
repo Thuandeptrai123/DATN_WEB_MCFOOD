@@ -9,7 +9,7 @@
         public string? ImageUrl { get; set; }
 
         public int? CookableQuantity { get; set; }
-
+        public bool IsActive { get; set; }
         public Guid FoodTypeId { get; set; }
         public FoodType FoodType { get; set; }
         public int CookedQuantity { get; set; } = 0; // Số lượng đã được nấu sẵn, có thể đặt hàng
