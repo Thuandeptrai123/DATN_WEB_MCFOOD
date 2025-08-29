@@ -7,6 +7,7 @@
         public decimal Price { get; set; }
         public Guid FoodTypeId { get; set; }
         public IFormFile? ImageFile { get; set; }
+        public bool IsActive { get; internal set; }
     }
 
 }

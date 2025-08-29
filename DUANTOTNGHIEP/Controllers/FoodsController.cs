@@ -39,7 +39,8 @@ namespace DUANTOTNGHIEP.Controllers
                     FoodTypeId = f.FoodTypeId,
                     FoodTypeName = f.FoodType.FoodTypeName,
                     CookableQuantity = f.CookableQuantity ?? 0,
-                    CookedQuantity = f.CookedQuantity
+                    CookedQuantity = f.CookedQuantity,
+                    IsActive = f.IsActive
                 }).ToListAsync();
 
             return Ok(new BaseResponse<List<FoodDto>>
@@ -49,7 +50,6 @@ namespace DUANTOTNGHIEP.Controllers
                 Data = foods
             });
         }
-
         // GET: api/foods/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -75,7 +75,8 @@ namespace DUANTOTNGHIEP.Controllers
                 FoodTypeId = food.FoodTypeId,
                 FoodTypeName = food.FoodType.FoodTypeName,
                 CookableQuantity = food.CookableQuantity ?? 0,
-                CookedQuantity = food.CookedQuantity
+                CookedQuantity = food.CookedQuantity,
+                IsActive = food.IsActive
             };
 
             return Ok(new BaseResponse<FoodDto>
@@ -126,7 +127,8 @@ namespace DUANTOTNGHIEP.Controllers
                 CreatedBy = "System",
                 UpdatedBy = "System",
                 CreatedDate = DateTime.UtcNow,
-                UpdatedDate = DateTime.UtcNow
+                UpdatedDate = DateTime.UtcNow,
+                IsActive = true
             };
 
             _context.Foods.Add(food);
@@ -194,8 +196,10 @@ namespace DUANTOTNGHIEP.Controllers
                     ErrorCode = 404,
                     Message = "Món ăn không tồn tại!"
                 });
-
-            _context.Foods.Remove(food);
+            food.IsActive = false;
+            food.UpdatedBy = "System";
+            food.UpdatedDate = DateTime.UtcNow;
+            _context.Foods.Update(food);
             await _context.SaveChangesAsync();
 
             return Ok(new BaseResponse<object>
